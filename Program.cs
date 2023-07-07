@@ -5,16 +5,17 @@ using System.Text;
 using System;
 using System.IO;
 using Newtonsoft.Json;
+using static Orxnre.Shop;
 
 public abstract class Program
 {
-    private static bool _onPrint;
-    private static StringBuilder _nextPrint = new();
-    private static bool _enableColor;
+    private static bool _onPrint; // 打印判定
+    private static StringBuilder _nextPrint = new(); // 缓冲区
+    private static bool _enableColor; // 颜色开关
 
-    private const string Version = "1.0β1"; // 版本
+    private const string Version = "1.0β2"; // 版本
     
-    private class SaveInfo
+    private class SaveInfo // 保存文件模板
     {
         public List<List<int[]>> Map = new();
         public int M;
@@ -24,7 +25,7 @@ public abstract class Program
     
     public static void Main()
     {
-        // 清屏
+        // 内部清屏
         static void Cs()
         {
             for (var y = Console.WindowTop; y < Console.WindowTop + Console.WindowHeight; y++) {
@@ -35,7 +36,7 @@ public abstract class Program
             _onPrint = false;
             _nextPrint = new StringBuilder();
         }
-
+        // 内部打印
         static void Pt()
         {
             if (_onPrint == false)
@@ -48,7 +49,7 @@ public abstract class Program
         
         var trueRandom = new Random(); // 随机生成器
 
-        Battle battle = new Battle(); // 实例化Battle类
+        Battle battle = new(); // 实例化Battle类
         
         // 关闭颜色时的打印优化
         static void PrintMaster(int type, object t)
@@ -107,20 +108,19 @@ public abstract class Program
         var pathConfig = path + "\\config.txt";
         var pathExist = File.Exists(pathConfig);
 
-        var inOrxnre = true;
+        var inOrxnre = 1;
         
         // 提示文本初始化
         var text = "";
-        var moneyText = "";
 
         // 初始化地图和敌人列表
         static List<List<int[]>> NewMapStr()
         {
-            List<List<int[]>> emptyMapStr = new List<List<int[]>>();
-            for (var i = 0; i <= 9; i++)
+            List<List<int[]>> emptyMapStr = new();
+            for (var y = 0; y <= 9; y++)
             {
-                List<int[]> mapStrLine = new List<int[]>();
-                for (var j = 0; j <= 9; j++)
+                List<int[]> mapStrLine = new();
+                for (var x = 0; x <= 9; x++)
                 {
                     mapStrLine.Add(new int[3]);
                 }
@@ -132,11 +132,11 @@ public abstract class Program
         
         static List<List<Role>> NewRole()
         {
-            List<List<Role>> emptyRole = new List<List<Role>>();
-            for (var i = 0; i <= 9; i++)
+            List<List<Role>> emptyRole = new();
+            for (var y = 0; y <= 9; y++)
             {
-                List<Role> mapRoleLine = new List<Role>();
-                for (var j = 0; j <= 9; j++)
+                List<Role> mapRoleLine = new();
+                for (var x = 0; x <= 9; x++)
                 {
                     mapRoleLine.Add(new Role());
                 }
@@ -149,8 +149,8 @@ public abstract class Program
         // 初始化玩家位置和信息
         var pX = 0; var nextPx = pX;
         var pY = 0; var nextPy = pY;
-        var money = 0;
-        Role pRole = new Role(1, "玩家", 500, 20, 100);
+        var money = 0; var totalMoney = 0;
+        Role pRole = new(1, "玩家", 500, 500, 33, 100);
         // 打印信息初始化
         var currentColor = ConsoleColor.White;
         string currentStr;
@@ -225,17 +225,16 @@ public abstract class Program
         // def: 地图填充模块
         void MapFill(int type, int x1, int x2, int y1, int y2)
         {
-            for (var i = x1; i <= x2; i++)
+            for (var y = y1; y <= y2; y++)
             {
-                for (var j = y1; j <= y2; j++)
+                for (var x = x1; x <= x2; x++)
                 {
                     try
                     {
-                        mapStr[i][j][1] = type;
+                        mapStr[y][x][1] = type;
                     }
                     catch
                     {
-                        // ignored
                     }
                 }
             }
@@ -244,21 +243,33 @@ public abstract class Program
         // def: 设置金币模块
         void MapMoney(int amount, int x, int y)
         {
-            mapStr[x][y][0] = 1;
-            mapStr[x][y][2] = amount;
+            mapStr[y][x][0] = 1;
+            mapStr[y][x][2] = amount;
         }
-
+        
+        // def: Role信息显示器
+        string RoleAsciiInfoHealthbar(int hp, int max, int len = 20)
+        {
+            var linePart = new decimal(len * hp / max);
+            return new string('=', (int)Math.Round(linePart, 0, MidpointRounding.AwayFromZero));
+        }
         string RoleAsciiInfo(Role who)
         {
+            //(格式示例)
             //┌──────────────────────┐
-            //│Enemy          100/100│
+            //│Enemy    181284/350000│
             //│[====================]│
             //└──────────────────────┘
-            string result = "";
-            var hp = who.Hp;
-            var attack = who.Attack;
-            var mp = who.Mp;
-            result += "------\n"; 
+            var result = "";
+            
+            var line = RoleAsciiInfoHealthbar(who.Hp , who.HpMax);
+            var hpAndMaxhp = $"{who.Hp}/{who.HpMax}";
+            
+            result += "┌──────────────────────┐\n";
+            result += $"│Enemy    {hpAndMaxhp,13}│\n";
+            result += $"│[{line,-20}]│\n";
+            result += "└──────────────────────┘";
+            
             return result;
         }
 
@@ -281,7 +292,10 @@ public abstract class Program
                     void MapInit(Random rdGen)
                     {
                         // 生成敌人
-                        mapRole[rdGen.Next(0, 9)][rdGen.Next(0, 9)] = new Role(2, "敌人", 100, 5, 100);
+                        for (var i = 0; i < 3; i++)
+                        {
+                            mapRole[rdGen.Next(0, 9)][rdGen.Next(0, 9)] = new Role(2, "敌人", 100, 100, 140, 100);
+                        }
                         // 全图填充土
                         MapFill(1, 0, 9, 0, 9);
                         // 生成石
@@ -326,9 +340,9 @@ public abstract class Program
                     }
                     else
                     {
-                        Printl("File not found.");
+                        Printl("文件不存在, 将不读取直接开始游戏.");
                     }
-                    Printl("Press any key to continue...");
+                    Printl("点击任意键继续...");
                     Read();
                     break;
                 case 2:
@@ -337,39 +351,34 @@ public abstract class Program
             }
    
             //// 游戏开始
-            while (inOrxnre)
+            while (inOrxnre == 1)
             {
                 // 绘制标题
-                void DrawIngameTitle()
+                void DrawIngameTitle(string position = "")
                 {
                     Cs();
-                    Printl($"Orxnre {Version}");
+                    Printl($"Orxnre {Version}{(position=="" ? "" : " |「" + position + "」")}");
                     Print($"$ {money} ");
-                    if (moneyText != "")
-                    {
-                        Color(ConsoleColor.Yellow);
-                        Print($"{moneyText}");
-                        Color();
-                        moneyText = "";
-                    }
+                    
+                    Print($"[{RoleAsciiInfoHealthbar(pRole.Hp, pRole.HpMax, 15),-15}] {pRole.Hp}/{pRole.HpMax}");
                     Printr();
                 }
                 DrawIngameTitle();
                 
                 // 绘制玩家位置和地图
-                for (var i = 0; i <= 9; i++)
+                for (var y = 0; y <= 9; y++)
                 {
-                    for (var j = 0; j <= 9; j++)
+                    for (var x = 0; x <= 9; x++)
                     {
-                        if (i == pY && j == pX)
+                        if (y == pY && x == pX)
                         {
                             Print("您 ");
                         }
                         else
                         {
                             // 判断该位置的编号是否超出范围以及是否有敌人并打印
-                            currentNum = mapStr[j][i][1];
-                            if (mapRole[j][i].Type == 2)
+                            currentNum = mapStr[y][x][1];
+                            if (mapRole[y][x].Type != -1)
                             {
                                 currentStr = "!!";
                             }
@@ -393,7 +402,7 @@ public abstract class Program
                     Printr();
                 }
                 // 打印提示
-                currentNum = mapStr[pX][pY][1];
+                currentNum = mapStr[pY][pX][1];
                 if (currentNum >= 0 && currentNum < BlockInfo.List.Length)
                 {
                     currentStr = BlockInfo.List[currentNum].Title;
@@ -411,7 +420,7 @@ public abstract class Program
                 Color(ConsoleColor.DarkGray);
                 Print("]");
                 Print($" {BlockInfo.List[currentNum].Explain}\n");
-                Printl("[L-保存进度] | [E-探索] [Q-商店] [C-颜色]");
+                Printl("[E-探索] [Q-商店] [C-颜色]");
                 Color();
                 // 清空文本并打印信息
                 Printl(text);
@@ -441,14 +450,21 @@ public abstract class Program
                         nextPx = pX + 1; break;
                     // E 寻找宝藏
                     case ConsoleKey.E:
-                        if (mapStr[pX][pY][0] == 1)
+                        // 挖掘理论等待时间 (450ms)
+                        for (int i = 0; i <= 10; i++)
                         {
-                            var moneyAdding = mapStr[pX][pY][2];
+                            Console.Write($"\r搜索中 [{RoleAsciiInfoHealthbar(i, 10, 10), -10}]");
+                            Thread.Sleep(45);
+                        }
+                        // 判断该处是否有宝箱
+                        if (mapStr[pY][pX][0] == 1)
+                        {
+                            var moneyAdding = mapStr[pY][pX][2];
                             money += moneyAdding;
-                            text = "找到了宝藏!";
-                            moneyText = $"(+{moneyAdding})";
-                            mapStr[pX][pY][2] = 0;
-                            mapStr[pX][pY][0] = 0;
+                            totalMoney += moneyAdding;
+                            text = $"找到了宝藏! (+{moneyAdding})";
+                            mapStr[pY][pX][2] = 0;
+                            mapStr[pY][pX][0] = 0;
                         }
                         else
                         {
@@ -477,46 +493,106 @@ public abstract class Program
                         if (pathCreating)
                         {
                             savesJson = JsonConvert.SerializeObject(saves);
-                            using (var configfile = File.Create(pathConfig))
-                            {
-                                configfile.Write(Encoding.Default.GetBytes(savesJson));
-                            }
+                            using var configfile = File.Create(pathConfig);
+                            configfile.Write(Encoding.Default.GetBytes(savesJson));
                         }
                         break;
+
+                    // Q 打开商店
+                    case ConsoleKey.Q:
+                        int selected = 0;
+                        int nextSelected = 0;
+                        bool inShop = true;
+                        while (inShop)
+                        {
+                            // 绘制页面
+                            DrawIngameTitle("商店");
+                            Printr();
+                            for (int i = 0; i < shopInventory.Length; i++)
+                            {
+                                shopItem item = shopInventory[i];
+                                Printl($" {(selected == i ? ">" : " ")} {item.Goods.Title} - ${item.Price} {(selected == i ? "<" : " ")}");
+                            }
+                            Printl("[Q-退出] [↑↓-选择]");
+                            // 读取按键
+                            var selectKey = ReadK().Key;
+                            if (selectKey == ConsoleKey.UpArrow)
+                            {
+                                nextSelected = selected - 1;
+                            }
+                            else if (selectKey == ConsoleKey.DownArrow)
+                            {
+                                nextSelected = selected + 1;
+                            }
+                            else if (selectKey == ConsoleKey.Q)
+                            {
+                                inShop = false;
+                            }
+                            selected = nextSelected >= 0 && nextSelected < shopInventory.Length ? nextSelected : selected;
+                        }
+                    break;
                 }
                 // 判断该次移动是否合法
-                if (-1 < nextPx && nextPx < 10 && -1 < nextPy && nextPy < 10)
+                if (nextPx is > -1 and < 10 && nextPy is > -1 and < 10)
                 {
-                    if (mapRole[nextPx][nextPy].Type == 2)
+                    // 目标位置有敌人阻挡
+                    if (mapRole[nextPy][nextPx].Type == 2 && mapRole[nextPy][nextPx].IsAlive())
                     {
-                        var currentRole = mapRole[nextPx][nextPy];
+                        var currentRole = mapRole[nextPy][nextPx];
 
-                        if (Select(new List<string> { "进攻", "取消" }, $"要发起进攻吗? TargetHP={currentRole.Hp}", true, 1) == 0)
+                        if (Select(new List<string> { "进攻", "取消" }, $"要发起进攻吗?\n{RoleAsciiInfo(currentRole)}", true, 1) == 0)
                         {
                             var blog = battle.Attack(pRole, currentRole); // battle log
-                            
-                            for (int i = 0; i < blog.LogInt.Count; i++)
+                            //  循环输出对战日志
+                            for (var i = 0; i < blog.LogInt.Count; i++)
                             {
                                 Console.WriteLine($"{blog.LogRole[i].Name} 发动了攻击, 造成 {blog.LogInt[i]} 伤害.");
-                                Thread.Sleep(150);
+                                Thread.Sleep(120);
                             }
-                            Console.WriteLine("点击任意键继续");
+                            // 如果攻击对象生命值耗尽则在该处新建空角色
+                            if (blog.Win == 0)
+                            {
+                                mapRole[nextPy][nextPx] = new Role();
+                            }
+                            Console.WriteLine($"{blog.Loser.Name} 战败了, 点击任意键继续...");
                             Console.ReadKey();
                         }
+                        // 对战结束后保留在原地
                         nextPx = pX;
                         nextPy = pY;
+                        if (pRole.IsAlive() == false) {
+                            inOrxnre = 2;
+                            break;
+                        }
                     }
                     else
                     {
+                        // 移动合法, 更改位置
                         pX = nextPx; pY = nextPy;
                     }
                 }
                 else
                 {
-                    nextPx = pX;
-                    nextPy = pY;
+                    // 移动不合法, 保持位置
+                    nextPx = pX; nextPy = pY;
                 }
             }
+            switch (inOrxnre)
+            {
+                case 1:
+                    Console.WriteLine("已退出游戏.");
+                    
+                    break; 
+                case 2: // 玩家失败提示
+                    DrawMenuTitle(way: 1);
+                    Pt();
+                    Console.WriteLine("あや...你的血条见底了!");
+                    Console.WriteLine($"累计 $ {totalMoney}");
+                    break;
+            }
+            Thread.Sleep(1000);
+            Console.WriteLine("点击任意键继续...");
+            Console.ReadKey();
         }
     }
 }

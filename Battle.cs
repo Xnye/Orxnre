@@ -7,6 +7,7 @@ public class Role
     public string Name; // 名称
 
     public int Hp; // 生命值
+    public int HpMax; // 最大生命值
     public int Attack; // 伤害
     public int Mp; // 魔力值
 
@@ -15,11 +16,12 @@ public class Role
         return Hp > 0;
     }
 
-    public Role(int type = -1, string name = "", int hp = 0, int attack = 0, int mp = 0)
+    public Role(int type = -1, string name = "", int hp = 0, int hpmax = 0, int attack = 0, int mp = 0)
     {
         Type = type;
         Name = name;
         Hp = hp;
+        HpMax = hpmax;
         Attack = attack;
         Mp = mp;
     }
@@ -27,8 +29,9 @@ public class Role
 
 public class BattleStatus
 {
-    public Role Winner = new();
+    public int Win = -1; // 0=攻击者获胜, 1=受攻击者获胜
     public Role Loser = new();
+    public Role Winner = new();
     public List<Role> LogRole = new(); // 战斗信息 - Role
     public List<int> LogInt = new(); // 战斗信息 - 伤害
 }
@@ -49,7 +52,8 @@ public class Battle
                 battleLog.LogRole.Add(attacker);
                 battleLog.LogInt.Add(deHp);
             }
-            else { battleLog.Winner = receiver; break; }
+            // 受攻击者获胜
+            else { battleLog.Win = 1; battleLog.Loser = attacker; battleLog.Winner = receiver; break; }
             
             // 被攻击者回合
             if (receiver.IsAlive())
@@ -59,7 +63,8 @@ public class Battle
                 battleLog.LogRole.Add(receiver);
                 battleLog.LogInt.Add(deHp);
             }
-            else { battleLog.Winner = attacker; break; }
+            // 攻击者获胜
+            else { battleLog.Win = 0; battleLog.Loser = receiver; battleLog.Winner = attacker; break; }
         }
 
         return battleLog;
