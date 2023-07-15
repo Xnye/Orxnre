@@ -9,7 +9,7 @@ internal class Shop
     }
     public static shopItem[] shopInventory =
     {
-        new shopItem() {Goods = Item.List[1], Price = 100},
-        new shopItem() {Goods = Item.List[2], Price = 100}
+        new shopItem() {Goods = Item.List[1], Price = 80},
+        new shopItem() {Goods = Item.List[2], Price = 150}
     };
 }

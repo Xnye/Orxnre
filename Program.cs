@@ -13,7 +13,7 @@ public abstract class Program
     private static StringBuilder _nextPrint = new(); // 缓冲区
     private static bool _enableColor; // 颜色开关
 
-    private const string Version = "1.0β2"; // 版本
+    public const string Version = "1.0β2"; // 版本
     
     private class SaveInfo // 保存文件模板
     {
@@ -25,7 +25,7 @@ public abstract class Program
     
     public static void Main()
     {
-        // 内部清屏
+        // 清屏
         static void Cs()
         {
             for (var y = Console.WindowTop; y < Console.WindowTop + Console.WindowHeight; y++) {
@@ -36,7 +36,7 @@ public abstract class Program
             _onPrint = false;
             _nextPrint = new StringBuilder();
         }
-        // 内部打印
+        // 输出缓存
         static void Pt()
         {
             if (_onPrint == false)
@@ -72,10 +72,7 @@ public abstract class Program
             else
             {
                 string? addNextPrint = t.ToString();
-                if (type == 1)
-                {
-                    addNextPrint += "\n";
-                }
+                addNextPrint += type == 1 ? "\n" : "";
                 _nextPrint.Append(addNextPrint);
             }
         }
@@ -120,10 +117,7 @@ public abstract class Program
             for (var y = 0; y <= 9; y++)
             {
                 List<int[]> mapStrLine = new();
-                for (var x = 0; x <= 9; x++)
-                {
-                    mapStrLine.Add(new int[3]);
-                }
+                for (var x = 0; x <= 9; x++) {mapStrLine.Add(new int[3]);}
                 emptyMapStr.Add(mapStrLine);
             }
             return emptyMapStr;
@@ -136,10 +130,7 @@ public abstract class Program
             for (var y = 0; y <= 9; y++)
             {
                 List<Role> mapRoleLine = new();
-                for (var x = 0; x <= 9; x++)
-                {
-                    mapRoleLine.Add(new Role());
-                }
+                for (var x = 0; x <= 9; x++) {mapRoleLine.Add(new Role());}
                 emptyRole.Add(mapRoleLine);
             }
             return emptyRole;
@@ -256,19 +247,19 @@ public abstract class Program
         string RoleAsciiInfo(Role who)
         {
             //(格式示例)
-            //┌──────────────────────┐
-            //│Enemy    181284/350000│
-            //│[====================]│
-            //└──────────────────────┘
+            //┌────────────────────────┐
+            //│ Enemy    181284/350000 │
+            //│ [====================] │
+            //└────────────────────────┘
             var result = "";
             
             var line = RoleAsciiInfoHealthbar(who.Hp , who.HpMax);
             var hpAndMaxhp = $"{who.Hp}/{who.HpMax}";
             
-            result += "┌──────────────────────┐\n";
-            result += $"│Enemy    {hpAndMaxhp,13}│\n";
-            result += $"│[{line,-20}]│\n";
-            result += "└──────────────────────┘";
+            result += "┌────────────────────────┐\n";
+            result += $"│ Enemy    {hpAndMaxhp,13} │\n";
+            result += $"│ [{line,-20}] │\n";
+            result += "└────────────────────────┘";
             
             return result;
         }
@@ -359,7 +350,6 @@ public abstract class Program
                     Cs();
                     Printl($"Orxnre {Version}{(position=="" ? "" : " |「" + position + "」")}");
                     Print($"$ {money} ");
-                    
                     Print($"[{RoleAsciiInfoHealthbar(pRole.Hp, pRole.HpMax, 15),-15}] {pRole.Hp}/{pRole.HpMax}");
                     Printr();
                 }
@@ -501,7 +491,7 @@ public abstract class Program
                     // Q 打开商店
                     case ConsoleKey.Q:
                         int selected = 0;
-                        int nextSelected = 0;
+                        int nextSelect = 0;
                         bool inShop = true;
                         while (inShop)
                         {
@@ -513,24 +503,42 @@ public abstract class Program
                                 shopItem item = shopInventory[i];
                                 Printl($" {(selected == i ? ">" : " ")} {item.Goods.Title} - ${item.Price} {(selected == i ? "<" : " ")}");
                             }
-                            Printl("[Q-退出] [↑↓-选择]");
+                            Printl("[Q-退出] | [↑↓-选择] [Enter-确认]");
                             // 读取按键
-                            var selectKey = ReadK().Key;
+                            ConsoleKey selectKey = ReadK().Key;
                             if (selectKey == ConsoleKey.UpArrow)
                             {
-                                nextSelected = selected - 1;
+                                nextSelect = selected - 1;
                             }
                             else if (selectKey == ConsoleKey.DownArrow)
                             {
-                                nextSelected = selected + 1;
+                                nextSelect = selected + 1;
                             }
                             else if (selectKey == ConsoleKey.Q)
                             {
                                 inShop = false;
                             }
-                            selected = nextSelected >= 0 && nextSelected < shopInventory.Length ? nextSelected : selected;
+                            else if (selectKey == ConsoleKey.Enter)
+                            {
+                                shopItem selectedItem = shopInventory[selected];
+                                bool canAfford = money >= selectedItem.Price;
+                                if (canAfford)
+                                {
+                                    switch (selectedItem.Goods.GetType().Name)
+                                    {
+                                        case "Effect":
+                                            // 防止增加后的血量超过上限
+                                            int addedHp = pRole.Hp + ((Item.Effect)selectedItem.Goods).Count;
+                                            pRole.Hp = addedHp > pRole.HpMax ? pRole.HpMax : addedHp;
+                                            break;
+                                    }
+                                    money -= selectedItem.Price;
+                                }
+                            }
+                            // 防止下一项超出列表范围
+                            selected = (nextSelect >= 0 && nextSelect < shopInventory.Length) ? nextSelect : selected;
                         }
-                    break;
+                        break;
                 }
                 // 判断该次移动是否合法
                 if (nextPx is > -1 and < 10 && nextPy is > -1 and < 10)
@@ -538,11 +546,11 @@ public abstract class Program
                     // 目标位置有敌人阻挡
                     if (mapRole[nextPy][nextPx].Type == 2 && mapRole[nextPy][nextPx].IsAlive())
                     {
-                        var currentRole = mapRole[nextPy][nextPx];
+                        Role currentRole = mapRole[nextPy][nextPx];
 
                         if (Select(new List<string> { "进攻", "取消" }, $"要发起进攻吗?\n{RoleAsciiInfo(currentRole)}", true, 1) == 0)
                         {
-                            var blog = battle.Attack(pRole, currentRole); // battle log
+                            BattleStatus blog = battle.Attack(pRole, currentRole); // battle log
                             //  循环输出对战日志
                             for (var i = 0; i < blog.LogInt.Count; i++)
                             {
