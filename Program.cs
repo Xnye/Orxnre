@@ -15,14 +15,6 @@ public abstract class Program
 
     public const string Version = "1.0β2"; // 版本
     
-    private class SaveInfo // 保存文件模板
-    {
-        public List<List<int[]>> Map = new();
-        public int M;
-        public int X;
-        public int Y;
-    }
-    
     public static void Main()
     {
         // 清屏
@@ -47,7 +39,7 @@ public abstract class Program
             }
         }
         
-        var trueRandom = new Random(); // 随机生成器
+        Random trueRandom = new Random(); // 随机生成器
 
         Battle battle = new(); // 实例化Battle类
         
@@ -100,180 +92,187 @@ public abstract class Program
         static void Printl(object t) => PrintMaster(1, t);
         static void Printr() => PrintMaster(2, "\n");
 
-        //配置文件相关
-        var path = Directory.GetCurrentDirectory();
-        var pathConfig = path + "\\config.txt";
-        var pathExist = File.Exists(pathConfig);
-
-        var inOrxnre = 1;
-        
-        // 提示文本初始化
-        var text = "";
-
-        // 初始化地图和敌人列表
-        static List<List<int[]>> NewMapStr()
-        {
-            List<List<int[]>> emptyMapStr = new();
-            for (var y = 0; y <= 9; y++)
-            {
-                List<int[]> mapStrLine = new();
-                for (var x = 0; x <= 9; x++) {mapStrLine.Add(new int[3]);}
-                emptyMapStr.Add(mapStrLine);
-            }
-            return emptyMapStr;
-        }
-        List<List<int[]>> mapStr = NewMapStr();
-        
-        static List<List<Role>> NewRole()
-        {
-            List<List<Role>> emptyRole = new();
-            for (var y = 0; y <= 9; y++)
-            {
-                List<Role> mapRoleLine = new();
-                for (var x = 0; x <= 9; x++) {mapRoleLine.Add(new Role());}
-                emptyRole.Add(mapRoleLine);
-            }
-            return emptyRole;
-        }
-        List<List<Role>> mapRole = NewRole();
-        
-        // 初始化玩家位置和信息
-        var pX = 0; var nextPx = pX;
-        var pY = 0; var nextPy = pY;
-        var money = 0; var totalMoney = 0;
-        Role pRole = new(1, "玩家", 500, 500, 33, 100);
-        // 打印信息初始化
-        var currentColor = ConsoleColor.White;
-        string currentStr;
-        int currentNum;
-
-        //def: 控制台颜色和打印相关
-        void Color(ConsoleColor cf = ConsoleColor.White, ConsoleColor cb = ConsoleColor.Black)
-        {
-            if (_enableColor)
-            {
-                Console.ForegroundColor = cf;
-                Console.BackgroundColor = cb;
-            }
-        }
-        Color();
-
-        // UI相关
-        void DrawMenuTitle (bool clear = true, int way = 0)
-        {
-            if (clear)
-            {
-                Cs();
-            }
-
-            switch (way)
-            {
-                case 0:
-                    Printl($"│ Orxnre {Version}\n└──────────────┐");
-                    break;
-                case 1:
-                    Printl($"Orxnre {Version}\n");
-                    break;
-            }
-        }
-        int Select (List<string> selections, string question = "", bool clear = true, int way = 0)
-        {
-            var selectionsCount = selections.Count;
-            var selected = 0;
-            while (true) {
-                DrawMenuTitle(clear: clear, way: way);
-                Print(question == "" ? question : question + "\n");
-                for (var i = 0; i < selectionsCount; i++) {
-                    switch (way)
-                    {
-                        case 1:
-                            Printl(i == selected ? $" ├─[ {selections[i]} ]   " : $" │   {selections[i]}     ");
-                            break;
-                        case 0:
-                            Printl(i == selected ? $"  [ {selections[i]} ]─┤ " : $"    {selections[i]}   │ ");
-                            break;
-                    }
-                }
-                
-                var ioInputKey = ReadK().Key;
-                switch (ioInputKey) {
-                    case ConsoleKey.UpArrow:
-                        if (selected != 0) {
-                            selected--;
-                        }
-                        break;
-                    case ConsoleKey.DownArrow:
-                        if (selected != selectionsCount - 1) {
-                            selected++;
-                        }
-                        break;
-                    case ConsoleKey.Enter:
-                        return selected;
-                }
-            }
-        }
-
-        // def: 地图填充模块
-        void MapFill(int type, int x1, int x2, int y1, int y2)
-        {
-            for (var y = y1; y <= y2; y++)
-            {
-                for (var x = x1; x <= x2; x++)
-                {
-                    try
-                    {
-                        mapStr[y][x][1] = type;
-                    }
-                    catch
-                    {
-                    }
-                }
-            }
-        }
-
-        // def: 设置金币模块
-        void MapMoney(int amount, int x, int y)
-        {
-            mapStr[y][x][0] = 1;
-            mapStr[y][x][2] = amount;
-        }
-        
-        // def: Role信息显示器
-        string RoleAsciiInfoHealthbar(int hp, int max, int len = 20)
-        {
-            var linePart = new decimal(len * hp / max);
-            return new string('=', (int)Math.Round(linePart, 0, MidpointRounding.AwayFromZero));
-        }
-        string RoleAsciiInfo(Role who)
-        {
-            //(格式示例)
-            //┌────────────────────────┐
-            //│ Enemy    181284/350000 │
-            //│ [====================] │
-            //└────────────────────────┘
-            var result = "";
-            
-            var line = RoleAsciiInfoHealthbar(who.Hp , who.HpMax);
-            var hpAndMaxhp = $"{who.Hp}/{who.HpMax}";
-            
-            result += "┌────────────────────────┐\n";
-            result += $"│ Enemy    {hpAndMaxhp,13} │\n";
-            result += $"│ [{line,-20}] │\n";
-            result += "└────────────────────────┘";
-            
-            return result;
-        }
+        //全局配置
+        string path = Directory.GetCurrentDirectory();
+        string pathConfig = path + "\\config.txt";
+        bool pathExist = File.Exists(pathConfig);
 
         while (true)
         {
+            ////// 游戏相关 //////
+            byte inOrxnre = 1;
+
+            // 提示文本初始化
+            string text = "";
+
+            // 初始化地图和敌人列表
+            static List<List<int[]>> NewMapStr()
+            {
+                List<List<int[]>> emptyMapStr = new();
+                for (byte y = 0; y <= 9; y++)
+                {
+                    List<int[]> mapStrLine = new();
+                    for (byte x = 0; x <= 9; x++) { mapStrLine.Add(new int[3]); }
+                    emptyMapStr.Add(mapStrLine);
+                }
+                return emptyMapStr;
+            }
+            List<List<int[]>> mapStr = NewMapStr();
+
+            static List<List<Role>> NewRole()
+            {
+                List<List<Role>> emptyRole = new();
+                for (byte y = 0; y <= 9; y++)
+                {
+                    List<Role> mapRoleLine = new();
+                    for (byte x = 0; x <= 9; x++) { mapRoleLine.Add(new Role()); }
+                    emptyRole.Add(mapRoleLine);
+                }
+                return emptyRole;
+            }
+            List<List<Role>> mapRole = NewRole();
+
+            // 初始化玩家位置和信息
+            var pX = 0; var nextPx = pX;
+            var pY = 0; var nextPy = pY;
+            var money = 0; var totalMoney = 0;
+            Role pRole = new(1, "玩家", 500, 500, 33, 100);
+            // 打印信息初始化
+            var currentColor = ConsoleColor.White;
+            string currentStr;
+            int currentNum;
+
+            //def: 控制台颜色和打印相关
+            void Color(ConsoleColor cf = ConsoleColor.White, ConsoleColor cb = ConsoleColor.Black)
+            {
+                if (_enableColor)
+                {
+                    Console.ForegroundColor = cf;
+                    Console.BackgroundColor = cb;
+                }
+            }
+            Color();
+
+            // UI相关
+            void DrawMenuTitle(bool clear = true, int way = 0)
+            {
+                if (clear)
+                {
+                    Cs();
+                }
+
+                switch (way)
+                {
+                    case 0:
+                        Printl($"│ Orxnre {Version}\n└──────────────┐");
+                        break;
+                    case 1:
+                        Printl($"Orxnre {Version}\n");
+                        break;
+                }
+            }
+            int Select(List<string> selections, string question = "", bool clear = true, int way = 0)
+            {
+                var selectionsCount = selections.Count;
+                var selected = 0;
+                while (true)
+                {
+                    DrawMenuTitle(clear: clear, way: way);
+                    Print(question == "" ? question : question + "\n");
+                    for (var i = 0; i < selectionsCount; i++)
+                    {
+                        switch (way)
+                        {
+                            case 1:
+                                Printl(i == selected ? $" ├─[ {selections[i]} ]   " : $" │   {selections[i]}     ");
+                                break;
+                            case 0:
+                                Printl(i == selected ? $"  [ {selections[i]} ]─┤ " : $"    {selections[i]}   │ ");
+                                break;
+                        }
+                    }
+
+                    var ioInputKey = ReadK().Key;
+                    switch (ioInputKey)
+                    {
+                        case ConsoleKey.UpArrow:
+                            if (selected != 0)
+                            {
+                                selected--;
+                            }
+                            break;
+                        case ConsoleKey.DownArrow:
+                            if (selected != selectionsCount - 1)
+                            {
+                                selected++;
+                            }
+                            break;
+                        case ConsoleKey.Enter:
+                            return selected;
+                    }
+                }
+            }
+
+            // def: 地图填充模块
+            void MapFill(int type, int x1, int x2, int y1, int y2)
+            {
+                for (var y = y1; y <= y2; y++)
+                {
+                    for (var x = x1; x <= x2; x++)
+                    {
+                        try
+                        {
+                            mapStr[y][x][1] = type;
+                        }
+                        catch
+                        {
+                        }
+                    }
+                }
+            }
+
+            // def: 设置金币模块
+            void MapMoney(int amount, int x, int y)
+            {
+                mapStr[y][x][0] = 1;
+                mapStr[y][x][2] = amount;
+            }
+
+            // def: Role信息显示器
+            string RoleAsciiInfoHealthbar(int hp, int max, int len = 20)
+            {
+                var linePart = new decimal(len * hp / max);
+                return new string('=', (int)Math.Round(linePart, 0, MidpointRounding.AwayFromZero));
+            }
+            string RoleAsciiInfo(Role who)
+            {
+                //(格式示例)
+                //┌────────────────────────┐
+                //│ Enemy    181284/350000 │
+                //│ [====================] │
+                //└────────────────────────┘
+                string result = "";
+
+                string line = RoleAsciiInfoHealthbar(who.Hp, who.HpMax);
+                string hpAndMaxhp = $"{who.Hp}/{who.HpMax}";
+
+                result += "┌────────────────────────┐\n";
+                result += $"│ Enemy    {hpAndMaxhp,13} │\n";
+                result += $"│ [{line,-20}] │\n";
+                result += "└────────────────────────┘";
+
+                return result;
+            }
+
+            ////// 初始化就绪, 进入标题界面 //////
             switch (Select (new List<string> {"开始游戏","读取存档", "退出程序"}))
             {
                 case 0:
-                    var inputRandom = new Random();
-                    var seedHash = MD5.Create();
+                    Random inputRandom = new Random();
+                    MD5 seedHash = MD5.Create();
                     DrawMenuTitle(way: 1);
                     Print("请输入种子 (随机请留空):");
-                    var seedInput = ReadL();
+                    string? seedInput = ReadL();
                     if (seedInput != null)
                     {
                         seedHash.ComputeHash(Encoding.UTF8.GetBytes(seedInput));
@@ -290,22 +289,22 @@ public abstract class Program
                         // 全图填充土
                         MapFill(1, 0, 9, 0, 9);
                         // 生成石
-                        for (var i = 0; i < 3; i++)
+                        for (byte i = 0; i < 3; i++)
                         {
-                            var setLx = rdGen.Next(0, 9); var setLy = rdGen.Next(0, 9);
-                            var setLxf = setLx + rdGen.Next(0, 2); var setLyf = setLy + rdGen.Next(0, 2);
+                            int setLx = rdGen.Next(0, 9); int setLy = rdGen.Next(0, 9);
+                            int setLxf = setLx + rdGen.Next(0, 2); int setLyf = setLy + rdGen.Next(0, 2);
                             MapFill(3, setLx, setLxf, setLy, setLyf);
                         }
                         // 生成草
-                        for (var i = 0; i < 3; i++)
+                        for (byte i = 0; i < 3; i++)
                         {
-                            var setLx = rdGen.Next(0, 9); var setLy = rdGen.Next(0, 9);
-                            var setLxf = setLx + rdGen.Next(0, 3); var setLyf = setLy + rdGen.Next(0, 3);
+                            int setLx = rdGen.Next(0, 9); int setLy = rdGen.Next(0, 9);
+                            int setLxf = setLx + rdGen.Next(0, 3); int setLyf = setLy + rdGen.Next(0, 3);
                             MapFill(2, setLx, setLxf, setLy, setLyf);
                         }
 
                         // 随机设置金币
-                        for (var i = 0; i < 10; i++)
+                        for (int i = 0; i < 10; i++)
                         {
 
                             MapMoney(rdGen.Next(200, 300), rdGen.Next(0, 9), rdGen.Next(0, 9));
@@ -319,13 +318,13 @@ public abstract class Program
                         using (var configfile = new StreamReader(File.OpenRead(pathConfig)))
                         {
                             var savesByte = configfile.ReadToEnd();
-                            var readSave = JsonConvert.DeserializeObject<SaveInfo>(savesByte);
+                            var readSave = JsonConvert.DeserializeObject<Save>(savesByte);
                             if (readSave != null)
                             {
                                 mapStr = readSave.Map;
-                                money = readSave.M;
-                                pX = readSave.X;
-                                pY = readSave.Y;
+                                money = readSave.Money;
+                                pX = readSave.PX;
+                                pY = readSave.PY;
                             }
                         }
                     }
@@ -416,12 +415,12 @@ public abstract class Program
                 Printl(text);
                 text = "";
 
-                var saves = new SaveInfo
+                var saves = new Save
                 {
                     Map = mapStr,
-                    M = money,
-                    X = pX,
-                    Y = pY
+                    Money = money,
+                    PX = pX,
+                    PY = pY
                 };
                 var savesJson = JsonConvert.SerializeObject(saves);
 
