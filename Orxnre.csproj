@@ -24,7 +24,6 @@
 
     <ItemGroup>
       <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-      <PackageReference Include="Terminal.Gui" Version="1.12.1" />
     </ItemGroup>
 
 </Project>
