@@ -132,11 +132,13 @@ public abstract class Program
             }
             List<List<Role>> mapRole = NewRole();
 
+            Save loadingSave = new Save();
+
             // 初始化玩家位置和信息
-            var pX = 0; var nextPx = pX;
-            var pY = 0; var nextPy = pY;
-            var money = 0; var totalMoney = 0;
-            Role pRole = new(1, "玩家", 500, 500, 33, 100);
+            var pX = loadingSave.PX; var nextPx = pX;
+            var pY = loadingSave.PY; var nextPy = pY;
+            var money = loadingSave.Money; var totalMoney = 0;
+            Role pRole = loadingSave.PRole;
             // 打印信息初始化
             var currentColor = ConsoleColor.White;
             string currentStr;
@@ -147,8 +149,7 @@ public abstract class Program
             {
                 if (_enableColor)
                 {
-                    Console.ForegroundColor = cf;
-                    Console.BackgroundColor = cb;
+                    Console.ForegroundColor = cf; Console.BackgroundColor = cb;
                 }
             }
             Color();
@@ -241,8 +242,16 @@ public abstract class Program
             // def: Role信息显示器
             string RoleAsciiInfoHealthbar(int hp, int max, int len = 20)
             {
-                var linePart = new decimal(len * hp / max);
-                return new string('=', (int)Math.Round(linePart, 0, MidpointRounding.AwayFromZero));
+                string returningString = "";
+                if (hp < 0 || max < 0) {
+                    returningString = new('?', len);
+                }
+                else
+                {
+                    decimal linePart = new(len * hp / max);
+                    returningString = new('=', (int)Math.Round(linePart, 0, MidpointRounding.AwayFromZero));
+                }
+                return returningString;
             }
             string RoleAsciiInfo(Role who)
             {

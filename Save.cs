@@ -2,12 +2,20 @@
 
 public class Save
 {
-    public List<List<int[]>> Map = new();
+    public List<List<int[]>> Map;
     public int Money;
-    public int TotalMoney = 0;
-    public int PX = 0;
-    public int PY = 0;
-    public readonly Role PRole = new(1, "玩家", 500, 500, 33, 100);
+    public int TotalMoney;
+    public int PX;
+    public int PY;
+    public readonly Role PRole;
 
-    public static readonly Save defaultSave = new();
+    public Save(List<List<int[]>>? map = null, int? money = null, int? totalMoney = null, int? pX = null, int? pY = null, Role? pRole = null)
+    {
+        Map = map ?? new List<List<int[]>>();
+        Money = money ?? 0;
+        TotalMoney = totalMoney ?? 0;
+        PX = pX ?? 0;
+        PY = pY ?? 0;
+        PRole = pRole ?? new(1, "玩家", 500, 500, 33, 100);
+    }
 }
