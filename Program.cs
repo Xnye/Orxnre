@@ -277,16 +277,13 @@ public abstract class Program
             switch (Select (new List<string> {"开始游戏","读取存档", "退出程序"}))
             {
                 case 0:
-                    Random inputRandom = new Random();
                     MD5 seedHash = MD5.Create();
                     DrawMenuTitle(way: 1);
-                    Print("请输入种子 (随机请留空):");
-                    string? seedInput = ReadL();
-                    if (seedInput != null)
-                    {
-                        seedHash.ComputeHash(Encoding.UTF8.GetBytes(seedInput));
-                        inputRandom = new Random(seedHash.GetHashCode());
-                    }
+                    Print("请输入地图种子, 留空将随机生成.\n → ");
+
+                    string? seedInput = ReadL() ?? trueRandom.Next().ToString();
+                    seedHash.ComputeHash(Encoding.UTF8.GetBytes(seedInput));
+                    Random inputRandom = new Random(seedHash.GetHashCode());
 
                     void MapInit(Random rdGen)
                     {
