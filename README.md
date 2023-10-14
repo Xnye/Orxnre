@@ -9,4 +9,6 @@
 
 特别擅长摸鱼 更新完全看心情 做着好玩的
 
+查看详情 → (orxnre.github.io)
+
 By Xnye ([Bilibili](https://space.bilibili.com/357881808))
