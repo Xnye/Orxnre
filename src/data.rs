@@ -1,8 +1,11 @@
+#![allow(non_snake_case)]
+
 use colored::{ColoredString, Colorize};
 
 pub const VERSION: &str = "v1.0-beta.3";
+pub const SPACES: &str = "                                                ";
 
-fn c(text: &str, rgb:(u8, u8, u8, bool)) -> ColoredString {
+fn c(text: &str, rgb: (u8, u8, u8, bool)) -> ColoredString {
     let (r, g, b, bold) = rgb;
     let mut out = format!("{}", text).truecolor(r, g, b);
     if bold { out = out.bold(); }
@@ -10,7 +13,7 @@ fn c(text: &str, rgb:(u8, u8, u8, bool)) -> ColoredString {
 }
 
 // 标题文本颜色
-pub fn title() -> ColoredString{
+pub fn TITLE() -> ColoredString {
     let tc1: (u8, u8, u8, bool) = (218, 187, 244, true);
     let tc2: (u8, u8, u8, bool) = (213, 187, 246, true);
     let tc3: (u8, u8, u8, bool) = (198, 184, 248, true);
@@ -22,9 +25,9 @@ pub fn title() -> ColoredString{
 
 pub fn block_name(id: i8) -> String {
     match id {
-        0 => format!("{}", c("土", (130, 87, 68, false))),
-        1 => format!("{}", c("草", (131, 194, 59, false))),
-        2 => format!("{}", c("石", (196, 189, 181, false))),
+        0 => format!("{}", c("土", (170, 127, 118, false))),
+        1 => format!("{}", c("草", (101, 174, 89, false))),
+        2 => format!("{}", c("石", (176, 169, 161, false))),
         _ => "　".to_string(),
     }
 }

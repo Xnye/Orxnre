@@ -13,18 +13,25 @@ struct Buffer {
 }
 
 impl Buffer {
+    fn new() -> Self { Buffer { buffer: ColoredString::default() } }
     fn w<T: ToString>(&mut self, text: T) { self.buffer = format!("{}{}", self.buffer, text.to_string()).white(); }
     fn wl<T: ToString>(&mut self, text: T) { self.buffer = format!("{}{}\n", self.buffer, text.to_string()).white(); }
 
+    fn cls(&mut self) { self.buffer = ColoredString::default() }
+    fn read(&mut self) -> ColoredString { self.buffer.clone() }
+
     fn print(&mut self) {
         println!("{}", self.buffer);
-        self.buffer = ColoredString::default();
+        self.cls();
     }
 }
 
 fn cls() {
-    let t = Term::stdout();
-    t.clear_screen().expect("Print Error: cls");
+    Term::stdout().move_cursor_to(0, 0).expect("Print Error: move cur");
+}
+
+fn cls_pro() {
+    Term::stdout().clear_screen().expect("Print Error: cls");
 }
 
 fn read() -> io::Result<Key> {
@@ -47,13 +54,13 @@ fn main() {
     let mut menu_selected = -1;
     let menu_len = menu.len() as i8;
 
-    // 防止不支持ANSI转义序列的终端出现乱码
+    // 应用虚拟终端 狗皮膏药 (暂时解决Win10默认终端不适配ANSI转义的问题)
     print!("{}", Style::new().apply_to(""));
 
-    cls();
+    cls_pro();
 
     loop {
-        b.wl(format!("{} | {}", data::title(), data::VERSION));
+        b.wl(format!("{} | {}", data::TITLE(), data::VERSION));
 
         // 打印选项并高亮选中项
         for (index, selected) in menu.iter().enumerate() {
@@ -87,11 +94,11 @@ fn main() {
             match menu[menu_selected as usize].as_str() {
                 "开始游戏" => {
                     game::main();
-                    cls();
+                    cls_pro();
                     break;
                 }
                 "退出程序" => {
-                    cls();
+                    cls_pro();
                     exit(0);
                 },
                 _ => {}
