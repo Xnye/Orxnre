@@ -2,7 +2,7 @@
 
 use colored::{ColoredString, Colorize};
 
-pub const VERSION: &str = "v1.0-beta.3";
+pub const VERSION: &str = "v1.0-beta.7";
 pub const SPACES: &str = "                                                ";
 
 fn c(text: &str, rgb: (u8, u8, u8, bool)) -> ColoredString {

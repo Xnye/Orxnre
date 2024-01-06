@@ -1,4 +1,4 @@
-use std::{process::exit};
+use std::process::exit;
 use colored::*;
 use console::Key;
 use noise::{NoiseFn, Perlin};
@@ -7,16 +7,17 @@ use rand::{Rng, thread_rng};
 use Key::Char;
 
 use crate::{data, battle, Buffer, cls, cls_pro, read};
+
+use battle::Enemy;
 use data::block_name;
-use crate::battle::Enemy;
 
 // 玩家数据
 pub struct Player {
-    position: (u8, u8),
-    money: i32,
-    max_hp: i32,
-    hp: i32,
-    atk: i32,
+    pub position: (u8, u8),
+    pub money: i32,
+    pub max_hp: i32,
+    pub hp: i32,
+    pub atk: i32,
 }
 
 impl Player {
@@ -27,12 +28,12 @@ impl Player {
 struct Map {
     id: Vec<Vec<i8>>,
     gift: Vec<Vec<i32>>,
-    sp: Vec<Vec<Enemy>>,
+    entity: Vec<Vec<Enemy>>,
 }
 
 impl Map {
     fn new(x: usize, y: usize) -> Self {
-        Map { id: vec![vec![-1; x]; y], gift: vec![vec![0; x]; y], sp: vec![vec![Enemy::new(); x]; y] }
+        Map { id: vec![vec![0; x]; y], gift: vec![vec![0; x]; y], entity: vec![vec![Enemy::new(); x]; y] }
     }
 
     fn measure(&self) -> (usize, usize) {
@@ -44,6 +45,12 @@ impl Map {
     fn map_set(&mut self, id: i8, y: u8, x: u8) -> &mut Map {
         let map = self;
         map.id[y as usize][x as usize] = id;
+        map
+    }
+
+    fn map_spawn(&mut self, y: u8, x: u8) -> &mut Map {
+        let map = self;
+        map.entity[y as usize][x as usize] = Enemy::new_exist();
         map
     }
 
@@ -115,8 +122,8 @@ impl Map {
 }
 
 pub fn main() {
-    let mut b = Buffer::new(); // 主要缓冲区 打印所有内容
-    let mut h = Buffer::new(); // 打印提示信息用
+    let mut b = Buffer::new(); // 主要缓冲区 打印所有内容 (buffer)
+    let mut h = Buffer::new(); // 打印提示信息用 (hint)
 
     let mut map = Map::new(16, 16); // 初始化地图信息
     let (x_len, y_len) = map.measure(); // 并获取其长度
@@ -129,6 +136,7 @@ pub fn main() {
     map.map_terrain(2, seed - 1, 200.0);
     map.map_terrain(1, seed - 2, 150.0);
     map.map_set(0, 3, 11);
+    map.map_spawn(2, 2);
     map.gift_random(300, 200, 25);
 
     cls_pro();
@@ -168,9 +176,9 @@ pub fn main() {
                     h.w(if gift != 0 {
                         map.gift[player.position.0 as usize][player.position.1 as usize] = 0;
                         player.money += gift;
-                        format!("E → 找到了宝藏 $+{}{}", gift, data::SPACES)
+                        format!("E > 找到了宝藏 $+{}{}", gift, data::SPACES)
                     } else {
-                        format!("E → 空空如也{}", data::SPACES)
+                        format!("E > 空空如也{}", data::SPACES)
                     });
                 }
 
@@ -179,9 +187,24 @@ pub fn main() {
             };
         }
 
-        // 判断下一步是否合法
+        // 超出边界不允许移动
         if next_y < y_len as u8 && next_x < x_len as u8 {
-            if map.id[next_y as usize][next_x as usize] != -1 {
+            // 不允许移动到空块上
+            if map.id[next_y as usize][next_x as usize] == -1 {
+                continue;
+            }
+            // 触发战斗
+            else if map.entity[next_y as usize][next_x as usize].exist {
+                let (a, b) = battle::main(player, map.entity[next_y as usize][next_x as usize].clone(), true);
+                player = a;
+                if b.exist {
+                    map.entity[next_y as usize][next_x as usize] = b;
+                }
+                else {
+                    player.position = (next_y, next_x);
+                }
+            }
+            else {
                 player.position = (next_y, next_x);
             }
         }
