@@ -197,12 +197,7 @@ pub fn main() {
             else if map.entity[next_y as usize][next_x as usize].exist {
                 let (a, b) = battle::main(player, map.entity[next_y as usize][next_x as usize].clone(), true);
                 player = a;
-                if b.exist {
-                    map.entity[next_y as usize][next_x as usize] = b;
-                }
-                else {
-                    player.position = (next_y, next_x);
-                }
+                map.entity[next_y as usize][next_x as usize] = if b.exist { b } else {Enemy::new()};
             }
             else {
                 player.position = (next_y, next_x);
