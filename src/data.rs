@@ -25,9 +25,10 @@ pub fn TITLE() -> ColoredString {
 
 pub fn block_name(id: i8) -> String {
     match id {
-        0 => format!("{}", c("土", (170, 127, 118, false))),
-        1 => format!("{}", c("草", (101, 174, 89, false))),
-        2 => format!("{}", c("石", (176, 169, 161, false))),
+        0 => format!("{}", c("土", (190, 147, 138, false))),
+        1 => format!("{}", c("草", (121, 204, 109, false))),
+        2 => format!("{}", c("石", (196, 189, 181, false))),
+        3 => format!("{}", c("水", (166, 185, 211, false))),
         _ => "　".to_string(),
     }
 }

@@ -52,7 +52,7 @@ pub fn main(mut a: Player, mut b: Enemy, mut priority: bool) -> (Player, Enemy) 
         for i in (if log.len() <= 4 {0} else {log.len().checked_sub(4).unwrap_or(0)})..log.len() {
             s.wl(log[i].clone());
         }
-        for _ in 0..(4_i32.checked_sub(log.len() as i32).unwrap_or(0)) {
+        for _ in 0..4_i32.checked_sub(log.len() as i32).unwrap_or(0) {
             s.wl("");
         }
 

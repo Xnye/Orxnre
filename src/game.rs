@@ -31,6 +31,7 @@ struct Map {
     entity: Vec<Vec<Enemy>>,
 }
 
+#[allow(dead_code)]
 impl Map {
     fn new(x: usize, y: usize) -> Self {
         Map { id: vec![vec![0; x]; y], gift: vec![vec![0; x]; y], entity: vec![vec![Enemy::new(); x]; y] }
@@ -54,19 +55,24 @@ impl Map {
         map
     }
 
-    fn map_terrain(&mut self, id: i8, seed: u32, limit: f64) -> &mut Map {
+    fn map_terrain(&mut self, id: i8, seed: u32, soft_limit: f64, form: u8) -> &mut Map {
         let (x_len, y_len) = self.measure();
         let map = self;
-        let perlin = Perlin::new(seed);
-
+        
         for y in 0..y_len {
             let mut row: Vec<i8> = Vec::new();
             for x in 0..x_len {
+                let perlin = match form {
+                    0 => Perlin::new(seed), // 默认
+                    1 => Perlin::new(seed + (y * x_len + x) as u32), // 散点
+                    _ => Perlin::new(seed),
+                };
+
                 let nx = x as f64 / x_len as f64;
                 let ny = y as f64 / y_len as f64;
                 let noise_value = perlin.get([nx, ny]);
 
-                let next = if (noise_value + 1.0) / 2.0 * 255.0 >= limit {
+                let next = if (noise_value + 1.0) / 2.0 * 255.0 >= soft_limit {
                     id
                 } else {
                     map.id[y][x]
@@ -97,10 +103,12 @@ impl Map {
 
         for y in 0..y_len {
             for x in 0..x_len {
-                if (y as u8, x as u8) != position {
-                    out = format!("{}{} ", out, block_name(self.id[y][x]));
+                out = if self.entity[y][x].exist {
+                    format!("{}{} ", out, "敌".on_truecolor(200, 120, 120).black())
+                } else if (y as u8, x as u8) != position {
+                    format!("{}{} ", out, block_name(self.id[y][x]))
                 } else {
-                    out = format!("{}{} ", out, "您".on_truecolor(200, 200, 200).black());
+                    format!("{}{} ", out, "您".on_white().black())
                 }
             }
             out = format!("{}\n", out);
@@ -133,9 +141,11 @@ pub fn main() {
     let seed: u32 = thread_rng().gen(); // 种子
 
     // 生成地形以及宝藏
-    map.map_terrain(2, seed - 1, 200.0);
-    map.map_terrain(1, seed - 2, 150.0);
-    map.map_set(0, 3, 11);
+    for _ in 0..3 {
+        map.map_terrain(2, seed + 2, 190.0, 1);
+        map.map_terrain(1, seed + 1, 190.0, 1);
+        map.map_terrain(3, seed, 170.0, 0);
+    }
     map.map_spawn(2, 2);
     map.gift_random(300, 200, 25);
 
