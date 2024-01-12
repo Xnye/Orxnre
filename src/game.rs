@@ -145,8 +145,8 @@ pub fn main() {
         map.map_terrain(2, seed + 2, 190.0, 1);
         map.map_terrain(1, seed + 1, 190.0, 1);
         map.map_terrain(3, seed, 170.0, 0);
+        map.map_spawn(thread_rng().gen_range(0..y_len) as u8, thread_rng().gen_range(0..x_len) as u8);
     }
-    map.map_spawn(2, 2);
     map.gift_random(300, 200, 25);
 
     cls_pro();
@@ -207,7 +207,7 @@ pub fn main() {
             else if map.entity[next_y as usize][next_x as usize].exist {
                 let (a, b) = battle::main(player, map.entity[next_y as usize][next_x as usize].clone(), true);
                 player = a;
-                map.entity[next_y as usize][next_x as usize] = if b.exist { b } else {Enemy::new()};
+                map.entity[next_y as usize][next_x as usize] = if b.hp > 0 { b } else {Enemy::new()};
             }
             else {
                 player.position = (next_y, next_x);
