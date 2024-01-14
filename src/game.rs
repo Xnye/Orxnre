@@ -6,7 +6,7 @@ use rand::{Rng, thread_rng};
 
 use Key::Char;
 
-use crate::{data, battle, Buffer, cls, cls_pro, read};
+use crate::{data, battle, Buffer, cls, cls_pro, read, random};
 
 use battle::Enemy;
 use data::block_name;
@@ -22,6 +22,16 @@ pub struct Player {
 
 impl Player {
     fn new() -> Self { Player { position: (0, 0), money: 0, max_hp: 500, hp: 500, atk: 20 } }
+
+    pub fn convert(&self) -> String {
+        if self.money < 1024 {
+            format!("{}.00KB", self.money)
+        } else if self.money < 1048576 {
+            format!("{:.2}MB", self.money as f64 / 1024.0)
+        } else {
+            format!("{:.2}GB", self.money as f64 / 1048576.0)
+        }
+    }
 }
 
 // 地图数据
@@ -34,7 +44,7 @@ struct Map {
 #[allow(dead_code)]
 impl Map {
     fn new(x: usize, y: usize) -> Self {
-        Map { id: vec![vec![0; x]; y], gift: vec![vec![0; x]; y], entity: vec![vec![Enemy::new(); x]; y] }
+        Map { id: vec![vec![0; x]; y], gift: vec![vec![0; x]; y], entity: vec![vec![Enemy::new_empty(); x]; y] }
     }
 
     fn measure(&self) -> (usize, usize) {
@@ -51,7 +61,8 @@ impl Map {
 
     fn map_spawn(&mut self, y: u8, x: u8) -> &mut Map {
         let map = self;
-        map.entity[y as usize][x as usize] = Enemy::new_exist();
+        let hp = random(140..160);
+        map.entity[y as usize][x as usize] = Enemy::new(hp, hp, random(15..20), random(600..800));
         map
     }
 
@@ -90,8 +101,8 @@ impl Map {
         let map = self;
 
         for _ in 0..tries {
-            let (y, x) = (thread_rng().gen_range(0..y_len), thread_rng().gen_range(0..x_len));
-            map.gift[y][x] = thread_rng().gen_range(min..max);
+            let (y, x) = (random(0..y_len as i32), random(0..x_len as i32));
+            map.gift[y as usize][x as usize] = random(min..max);
         }
         map
     }
@@ -134,7 +145,7 @@ pub fn main() {
     let mut h = Buffer::new(); // 打印提示信息用 (hint)
 
     let mut map = Map::new(16, 16); // 初始化地图信息
-    let (x_len, y_len) = map.measure(); // 并获取其长度
+    let (x_len, y_len) = (map.measure().0 as i32, map.measure().0 as i32) ; // 并获取其长度
 
     let mut player = Player::new(); // 初始化玩家信息
 
@@ -145,7 +156,7 @@ pub fn main() {
         map.map_terrain(2, seed + 2, 190.0, 1);
         map.map_terrain(1, seed + 1, 190.0, 1);
         map.map_terrain(3, seed, 170.0, 0);
-        map.map_spawn(thread_rng().gen_range(0..y_len) as u8, thread_rng().gen_range(0..x_len) as u8);
+        map.map_spawn(random(0..y_len) as u8, random(0..x_len) as u8);
     }
     map.gift_random(300, 200, 25);
 
@@ -154,11 +165,11 @@ pub fn main() {
     loop {
         cls();
 
-        b.wl(format!("{} | {}", data::TITLE(), data::VERSION)); // 标题
+        b.wl(format!("{} | {}{}", data::TITLE(), data::VERSION, data::SPACES)); // 标题
         // Orxnre | v1.0-beta.3
 
-        b.wl(format!("${} | {}/{}", player.money, player.hp, player.max_hp)); // 玩家信息
-        // $514 | 495/500
+        b.wl(format!("${} | {}/{}{}", player.convert(), player.hp, player.max_hp, data::SPACES)); // 玩家信息
+        // 5.14MB | 495/500
 
         b.wl(map.print(player.position)); // 写入地图
         b.wl(h.read()); // 写入提示消息
@@ -186,7 +197,7 @@ pub fn main() {
                     h.w(if gift != 0 {
                         map.gift[player.position.0 as usize][player.position.1 as usize] = 0;
                         player.money += gift;
-                        format!("E > 找到了宝藏 $+{}{}", gift, data::SPACES)
+                        format!("E > 找到了宝藏 +{}KB{}", gift, data::SPACES)
                     } else {
                         format!("E > 空空如也{}", data::SPACES)
                     });
@@ -207,7 +218,11 @@ pub fn main() {
             else if map.entity[next_y as usize][next_x as usize].exist {
                 let (a, b) = battle::main(player, map.entity[next_y as usize][next_x as usize].clone(), true);
                 player = a;
-                map.entity[next_y as usize][next_x as usize] = if b.hp > 0 { b } else {Enemy::new()};
+                map.entity[next_y as usize][next_x as usize] = if b.hp > 0 { b } else {
+                    player.money += b.reward;
+                    Enemy::new_empty()
+                };
+                
             }
             else {
                 player.position = (next_y, next_x);

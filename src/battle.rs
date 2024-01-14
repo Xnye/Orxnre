@@ -10,10 +10,11 @@ pub struct Enemy {
     pub max_hp: i32,
     pub hp: i32,
     pub atk: i32,
+    pub reward: i32,
 }
 impl Enemy {
-    pub fn new() -> Self { Enemy { exist: false, max_hp: 0, hp: 0, atk: 0, } }
-    pub fn new_exist() -> Self { Enemy { exist: true, max_hp: 100, hp: 100, atk: 10, } }
+    pub fn new_empty() -> Self { Enemy { exist: false, max_hp: 0, hp: 0, atk: 0, reward: 0 } }
+    pub fn new(max_hp: i32, hp: i32, atk: i32, reward: i32) -> Self { Enemy { exist: true, max_hp, hp, atk, reward} }
 }
 
 // 战斗动作
@@ -50,10 +51,10 @@ pub fn main(mut a: Player, mut b: Enemy, mut priority: bool) -> (Player, Enemy) 
     while march2 {
         if !march {march2 = !march2}
         // 打印标题
-        s.wl(format!("{} | {}", data::TITLE(), data::VERSION));
+        s.wl(format!("{} | {}{}", data::TITLE(), data::VERSION, data::SPACES)); // 标题
         // Orxnre | v1.0-beta.3
-        s.wl(format!("${} | {}/{}", a.money, a.hp, a.max_hp));
-        // $514 | 495/500
+        s.wl(format!("${} | {}/{}{}", a.convert(), a.hp, a.max_hp, data::SPACES)); // 玩家信息
+        // 5.14MB | 495/500
         s.wl(format!("[ ENEMY {}/{} ]{}", b.hp, b.max_hp, data::SPACES));
         // [ ENEMY 67/100 ]
 
@@ -68,7 +69,7 @@ pub fn main(mut a: Player, mut b: Enemy, mut priority: bool) -> (Player, Enemy) 
         sel_selected = -1;
         next_action = if a.hp <= 0 || b.hp <= 0 { Action::Attack } else { Action::Skip };
 
-        if auto_fight { s.wl("\n  AUTO PLAY  ".black().on_bright_green()); }
+        if auto_fight { s.wl("\n AUTO PLAY ".black().on_bright_green()); }
 
         cls();
         s.print();
@@ -77,7 +78,7 @@ pub fn main(mut a: Player, mut b: Enemy, mut priority: bool) -> (Player, Enemy) 
             // 打印选项
             for (index, selected) in sel.iter().enumerate() {
                 c.w(format!("{} ", if sel_highlighted == index as i8 {
-                    format!("·{} ", selected).on_white().black()
+                    format!(" {} ", selected).on_white().black()
                 } else {
                     format!(" {} ", selected).white()
                 }));
@@ -121,7 +122,11 @@ pub fn main(mut a: Player, mut b: Enemy, mut priority: bool) -> (Player, Enemy) 
             Action::Attack => {
                 march = !march;
                 // 判断双方状态
-                let log_entry: ColoredString = format!("{}{}", if a.hp <= 0 { "寄".red() } else if b.hp <= 0 { "赢".green() } else {
+                let log_entry: ColoredString = format!("{}{}", if a.hp <= 0 { 
+                    "你寄了".red()
+                 } else if b.hp <= 0 { 
+                    format!("你征服了敌人 +{}KB", b.reward).green()
+                } else {
                     // 如果对战未结束则为 true, 反之亦然
                     march = !march;
                     // 先交换优先权, 再反向判断, 如果 priority 为 true 则 a 先攻击

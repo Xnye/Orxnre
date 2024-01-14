@@ -2,11 +2,11 @@ mod data;
 mod game;
 mod battle;
 
-use std::io;
-use std::process::exit;
+use std::{io, process::exit, ops::Range};
 use colored::*;
 use console::{Key, Term, Style};
 use Key::Char;
+use rand::{thread_rng, Rng};
 
 // 缓冲区
 struct Buffer {
@@ -42,6 +42,11 @@ fn cls_pro() {
 fn read() -> io::Result<Key> {
     Term::stdout().read_key()
 }
+
+fn random(range: Range<i32>) -> i32 {
+    thread_rng().gen_range(range)
+}
+
 
 // 主程序
 fn main() {
