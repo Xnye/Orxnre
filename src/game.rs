@@ -61,8 +61,8 @@ impl Map {
 
     fn map_spawn(&mut self, y: u8, x: u8) -> &mut Map {
         let map = self;
-        let hp = random(140..160);
-        map.entity[y as usize][x as usize] = Enemy::new(hp, hp, random(15..20), random(600..800));
+        let set_hp = random(140..160);
+        map.entity[y as usize][x as usize] = Enemy::new(set_hp, set_hp, random(15..20), random(600..800));
         map
     }
 
@@ -165,10 +165,10 @@ pub fn main() {
     loop {
         cls();
 
-        b.wl(format!("{} | {}{}", data::TITLE(), data::VERSION, data::SPACES)); // 标题
+        b.wl(format!("{} | {}{}", data::TITLE(), data::VERSION, data::S)); // 标题
         // Orxnre | v1.0-beta.3
 
-        b.wl(format!("${} | {}/{}{}", player.convert(), player.hp, player.max_hp, data::SPACES)); // 玩家信息
+        b.wl(format!("${} | {}/{}{}", player.convert(), player.hp, player.max_hp, data::S)); // 玩家信息
         // 5.14MB | 495/500
 
         b.wl(map.print(player.position)); // 写入地图
@@ -197,9 +197,9 @@ pub fn main() {
                     h.w(if gift != 0 {
                         map.gift[player.position.0 as usize][player.position.1 as usize] = 0;
                         player.money += gift;
-                        format!("E > 找到了宝藏 +{}KB{}", gift, data::SPACES)
+                        format!("E > 找到了宝藏 +{}KB{}", gift, data::S)
                     } else {
-                        format!("E > 空空如也{}", data::SPACES)
+                        format!("E > 空空如也{}", data::S)
                     });
                 }
 
@@ -218,11 +218,14 @@ pub fn main() {
             else if map.entity[next_y as usize][next_x as usize].exist {
                 let (a, b) = battle::main(player, map.entity[next_y as usize][next_x as usize].clone(), true);
                 player = a;
-                map.entity[next_y as usize][next_x as usize] = if b.hp > 0 { b } else {
+                map.entity[next_y as usize][next_x as usize] = if player.hp <= 0 { // 玩家失败
+                    break
+                } else if b.hp > 0 { // 敌人存活
+                    b
+                } else { // 敌人被击败
                     player.money += b.reward;
                     Enemy::new_empty()
                 };
-                
             }
             else {
                 player.position = (next_y, next_x);

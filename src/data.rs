@@ -2,8 +2,8 @@
 
 use colored::{ColoredString, Colorize};
 
-pub const VERSION: &str = "v1.0-beta.11";
-pub const SPACES: &str = "                                                ";
+pub const VERSION: &str = "v1.0-beta.12";
+pub const S: &str = "                                                ";
 
 fn c(text: &str, rgb: (u8, u8, u8, bool)) -> ColoredString {
     let (r, g, b, bold) = rgb;

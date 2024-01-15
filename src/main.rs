@@ -43,8 +43,8 @@ fn read() -> io::Result<Key> {
     Term::stdout().read_key()
 }
 
-fn random(range: Range<i32>) -> i32 {
-    thread_rng().gen_range(range)
+fn random(r: Range<i32>) -> i32 {
+    thread_rng().gen_range(r)
 }
 
 

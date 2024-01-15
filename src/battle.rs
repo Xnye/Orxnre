@@ -21,8 +21,6 @@ impl Enemy {
 enum Action {
     Skip,
     Attack,
-    SkillA,
-    SkillB,
 }
 
 pub fn main(mut a: Player, mut b: Enemy, mut priority: bool) -> (Player, Enemy) {
@@ -30,7 +28,7 @@ pub fn main(mut a: Player, mut b: Enemy, mut priority: bool) -> (Player, Enemy) 
     let mut c: Buffer = Buffer::new(); // 辅助缓冲区
     // 战斗相关
     let mut log: Vec<ColoredString> = Vec::new(); // 战斗日志
-    let log_line: usize = 6; // 战斗日志显示行数
+    let log_line: usize = 8; // 战斗日志显示行数
     let mut march: bool = true; // 要继续对战吗?
     let mut march2: bool = true; // 便于打印结果
     let mut auto_fight: bool = false; // 自动战斗
@@ -51,12 +49,12 @@ pub fn main(mut a: Player, mut b: Enemy, mut priority: bool) -> (Player, Enemy) 
     while march2 {
         if !march {march2 = !march2}
         // 打印标题
-        s.wl(format!("{} | {}{}", data::TITLE(), data::VERSION, data::SPACES)); // 标题
+        s.wl(format!("{} | {}{}", data::TITLE(), data::VERSION, data::S)); // 标题
         // Orxnre | v1.0-beta.3
-        s.wl(format!("${} | {}/{}{}", a.convert(), a.hp, a.max_hp, data::SPACES)); // 玩家信息
+        s.wl(format!("${} | {}/{}{}", a.convert(), a.hp, a.max_hp, data::S)); // 玩家信息
         // 5.14MB | 495/500
-        s.wl(format!("[ ENEMY {}/{} ]{}", b.hp, b.max_hp, data::SPACES));
-        // [ ENEMY 67/100 ]
+        s.wl(format!("[ ENEMY {} ]{}", if b.hp < 0 {format!("0/{}", b.max_hp).red()} else {format!("{}/{}", b.hp, b.max_hp).white()}, data::S));
+        // [ ENEMY 67/100 ] (归零显示红色)
 
         // 打印战斗日志并填补空行
         for i in (if log.len() <= log_line {0} else {log.len().checked_sub(log_line).unwrap_or(0)})..log.len() {
@@ -124,7 +122,7 @@ pub fn main(mut a: Player, mut b: Enemy, mut priority: bool) -> (Player, Enemy) 
                 // 判断双方状态
                 let log_entry: ColoredString = format!("{}{}", if a.hp <= 0 { 
                     "你寄了".red()
-                 } else if b.hp <= 0 { 
+                } else if b.hp <= 0 { 
                     format!("你征服了敌人 +{}KB", b.reward).green()
                 } else {
                     // 如果对战未结束则为 true, 反之亦然
@@ -138,7 +136,7 @@ pub fn main(mut a: Player, mut b: Enemy, mut priority: bool) -> (Player, Enemy) 
                         a.hp -= b.atk;
                         format!("敌方造成了 {} 伤害", b.atk).yellow()
                     }
-                }, data::SPACES).white();
+                }, data::S).white();
                 log.push(log_entry);
             }
             _ => {}
