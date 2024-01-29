@@ -70,6 +70,8 @@ fn main() {
     loop {
         b.wl(format!("{} | {}", data::TITLE(), data::VERSION));
 
+        b.wl("\n↑↓ 移动 Enter 选中\n在游戏中使用 H 键查看提示.\n".truecolor(150, 150, 150));
+
         // 打印选项并高亮选中项
         for (index, selected) in menu.iter().enumerate() {
             if menu_highlighted == index as i8 {

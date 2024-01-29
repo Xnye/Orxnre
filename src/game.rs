@@ -8,7 +8,7 @@ use Key::Char;
 
 use crate::{data, battle, Buffer, cls, cls_pro, read, random};
 
-use battle::Enemy;
+use battle::{Enemy, EnemyType};
 use data::block_name;
 
 // 玩家数据
@@ -18,10 +18,11 @@ pub struct Player {
     pub max_hp: i32,
     pub hp: i32,
     pub atk: i32,
+    pub bag: [i32; 5],
 }
 
 impl Player {
-    fn new() -> Self { Player { position: (0, 0), money: 0, max_hp: 500, hp: 500, atk: 20 } }
+    fn new() -> Self { Player { position: (0, 0), money: 0, max_hp: 500, hp: 500, atk: 20, bag: [0; 5]} }
 
     pub fn convert(&self) -> String {
         if self.money < 1024 {
@@ -59,10 +60,20 @@ impl Map {
         map
     }
 
-    fn map_spawn(&mut self, y: u8, x: u8) -> &mut Map {
+    fn map_spawn(&mut self, y: u8, x: u8, e: EnemyType) -> &mut Map {
         let map = self;
-        let set_hp = random(140..160);
-        map.entity[y as usize][x as usize] = Enemy::new(set_hp, set_hp, random(15..20), random(600..800));
+
+        map.entity[y as usize][x as usize] = match e {
+            EnemyType::Normal(level ) => {
+                let l = level as i32;
+                let hp = 90 + l * 10; // 血量 f(x) = 90 + 10x
+                let atk = 12 + l * 3; // 攻击 f(x) = 12 + 3x
+                let award = 500 + l * 100; // 奖励 f(x) = (600 + 100x) ± 200
+                Enemy::new(hp, hp, atk, random(award .. award + 200))
+            },
+            EnemyType::Full(e) => e,
+        };
+        
         map
     }
 
@@ -156,7 +167,7 @@ pub fn main() {
         map.map_terrain(2, seed + 2, 190.0, 1);
         map.map_terrain(1, seed + 1, 190.0, 1);
         map.map_terrain(3, seed, 170.0, 0);
-        map.map_spawn(random(0..y_len) as u8, random(0..x_len) as u8);
+        map.map_spawn(random(0..y_len) as u8, random(0..x_len) as u8, EnemyType::Normal(1));
     }
     map.gift_random(300, 200, 25);
 
@@ -188,6 +199,9 @@ pub fn main() {
                 Char('s') | Char('S') => next_y = next_y.wrapping_add(1),
                 Char('a') | Char('A') => next_x = next_x.wrapping_sub(1),
                 Char('d') | Char('D') => next_x = next_x.wrapping_add(1),
+
+                // H 帮助
+                Char('h') | Char('H') => h.w("H > WASD 移动 E 探索 H 提示 Esc 退出游戏"),
 
                 // E 探索
                 Char('e') | Char('E') => {

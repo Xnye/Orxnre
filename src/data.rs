@@ -2,7 +2,7 @@
 
 use colored::{ColoredString, Colorize};
 
-pub const VERSION: &str = "v1.0-beta.12";
+pub const VERSION: &str = "v1.0-beta.13";
 pub const S: &str = "                                                ";
 
 fn c(text: &str, rgb: (u8, u8, u8, bool)) -> ColoredString {
@@ -30,5 +30,15 @@ pub fn block_name(id: i8) -> String {
         2 => format!("{}", c("石", (196, 189, 181, false))),
         3 => format!("{}", c("水", (166, 185, 211, false))),
         _ => "　".to_string(),
+    }
+}
+
+pub fn item_name(id: i8) -> String {
+    match id {
+        0 => format!("{}", ""),
+        1 => format!("{}", ""),
+        2 => format!("{}", ""),
+        3 => format!("{}", ""),
+        _ => "".to_string(),
     }
 }

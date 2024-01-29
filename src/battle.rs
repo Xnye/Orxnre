@@ -17,6 +17,11 @@ impl Enemy {
     pub fn new(max_hp: i32, hp: i32, atk: i32, reward: i32) -> Self { Enemy { exist: true, max_hp, hp, atk, reward} }
 }
 
+pub enum EnemyType {
+    Normal(u8), // level
+    Full(Enemy),
+}
+
 // 战斗动作
 enum Action {
     Skip,
