@@ -6,10 +6,10 @@ use rand::{Rng, thread_rng};
 
 use Key::Char;
 
-use crate::{data, battle, Buffer, cls, cls_pro, read, random};
+use crate::{data::{self, S}, battle, Buffer, cls, cls_pro, read, random};
 
 use battle::{Enemy, EnemyType};
-use data::block_name;
+use data::{block_name, item_name};
 
 // 玩家数据
 pub struct Player {
@@ -176,15 +176,17 @@ pub fn main() {
     loop {
         cls();
 
-        b.wl(format!("{} | {}{}", data::TITLE(), data::VERSION, data::S)); // 标题
+        b.wl(format!("{} | {}{}", data::TITLE(), data::VERSION, S)); // 标题
         // Orxnre | v1.0-beta.3
 
-        b.wl(format!("${} | {}/{}{}", player.convert(), player.hp, player.max_hp, data::S)); // 玩家信息
+        b.wl(format!("${} | {}/{}{}", player.convert(), player.hp, player.max_hp, S)); // 玩家信息
         // 5.14MB | 495/500
 
         b.wl(map.print(player.position)); // 写入地图
-        b.wl(h.read()); // 写入提示消息
+        b.wl(if h.modified {h.read()} else {format!("{S}\n{S}").white()}); // 写入提示消息
+        b.wl(S); // 空行
         b.print(); // 打印到屏幕
+
         h = Buffer::new(); // 清空消息
 
         let (mut next_y, mut next_x) = player.position;
@@ -211,10 +213,19 @@ pub fn main() {
                     h.w(if gift != 0 {
                         map.gift[player.position.0 as usize][player.position.1 as usize] = 0;
                         player.money += gift;
-                        format!("E > 找到了宝藏 +{}KB{}", gift, data::S)
+                        format!("E > 找到了宝藏 +{}KB{}", gift, S)
                     } else {
-                        format!("E > 空空如也{}", data::S)
+                        format!("E > 空空如也{}", S)
                     });
+                }
+
+                // Q 背包
+                Char('q') | Char('Q') => {
+                    h.wl(format!("Q > 背包{}", S));
+                    for (index, item) in data::ITEM.iter().enumerate() {
+                        h.w(format!("{} {} ", item, player.bag[index]));
+                    }
+                    h.w(S);
                 }
 
                 // Others 处理默认情况

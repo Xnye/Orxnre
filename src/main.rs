@@ -11,15 +11,16 @@ use rand::{thread_rng, Rng};
 // 缓冲区
 struct Buffer {
     buffer: ColoredString,
+    modified: bool,
 }
 
 impl Buffer {
     // 新建
-    fn new() -> Self { Buffer { buffer: ColoredString::default() } }
+    fn new() -> Self { Buffer { buffer: ColoredString::default(), modified: false } }
     // 写入内容
-    fn w<T: ToString>(&mut self, text: T) { self.buffer = format!("{}{}", self.buffer, text.to_string()).white(); }
+    fn w<T: ToString>(&mut self, text: T) { self.modified = true; self.buffer = format!("{}{}", self.buffer, text.to_string()).white(); }
     // 写入内容+换行
-    fn wl<T: ToString>(&mut self, text: T) { self.buffer = format!("{}{}\n", self.buffer, text.to_string()).white(); }
+    fn wl<T: ToString>(&mut self, text: T) { self.modified = true; self.buffer = format!("{}{}\n", self.buffer, text.to_string()).white(); }
     // 清除内容
     fn cls(&mut self) { self.buffer = ColoredString::default() }
     // 读取 返回 ColoredString
@@ -50,7 +51,7 @@ fn random(r: Range<i32>) -> i32 {
 
 // 主程序
 fn main() {
-    let mut b = Buffer { buffer: ColoredString::default() }; // 主要缓冲区
+    let mut b = Buffer::new(); // 主要缓冲区
 
     let menu = vec![
         "开始游戏".to_string(),
