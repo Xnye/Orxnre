@@ -6,7 +6,7 @@ use rand::{Rng, thread_rng};
 
 use Key::Char;
 
-use crate::{data::{self, S}, battle, Buffer, cls, cls_pro, read, random};
+use crate::{data::{self, S}, battle, shop, Buffer, cls, cls_pro, read, random};
 
 use battle::{Enemy, EnemyType};
 use data::{block_name, item_name};
@@ -54,13 +54,13 @@ impl Map {
         (x_len, y_len)
     }
 
-    fn map_set(&mut self, id: i8, y: u8, x: u8) -> &mut Map {
+    fn set(&mut self, id: i8, y: u8, x: u8) -> &mut Map {
         let map = self;
         map.id[y as usize][x as usize] = id;
         map
     }
 
-    fn map_spawn(&mut self, y: u8, x: u8, e: EnemyType) -> &mut Map {
+    fn spawn(&mut self, y: u8, x: u8, e: EnemyType) -> &mut Map {
         let map = self;
 
         map.entity[y as usize][x as usize] = match e {
@@ -118,6 +118,15 @@ impl Map {
         map
     }
 
+    fn set_random(&mut self, id: i8) -> &mut Map {
+        let (x_len, y_len) = self.measure();
+        let map = self;
+
+        let (y, x) = (random(0..y_len as i32), random(0..x_len as i32));
+        map.id[y as usize][x as usize] = id;
+        map
+    }
+
     fn print(&self, position: (u8, u8)) -> String {
         let (x_len, y_len) = self.measure();
 
@@ -162,13 +171,14 @@ pub fn main() {
 
     let seed: u32 = thread_rng().gen(); // 种子
 
-    // 生成地形以及宝藏
+    // 生成地形、宝藏、商店
     for _ in 0..3 {
         map.map_terrain(2, seed + 2, 190.0, 1);
         map.map_terrain(1, seed + 1, 190.0, 1);
         map.map_terrain(3, seed, 170.0, 0);
-        map.map_spawn(random(0..y_len) as u8, random(0..x_len) as u8, EnemyType::Normal(1));
+        map.spawn(random(0..y_len) as u8, random(0..x_len) as u8, EnemyType::Normal(1));
     }
+    map.set_random(-1);
     map.gift_random(300, 200, 25);
 
     cls_pro();
@@ -203,20 +213,20 @@ pub fn main() {
                 Char('d') | Char('D') => next_x = next_x.wrapping_add(1),
 
                 // H 帮助
-                Char('h') | Char('H') => h.w("H > WASD 移动 E 探索 H 提示 Esc 退出游戏"),
+                Char('h') | Char('H') => h.w("H > WASD 移动 E 探索 Q 背包 H 提示 Esc 退出游戏"),
 
                 // E 探索
                 Char('e') | Char('E') => {
                     let gift = map.explore(player.position);
 
                     // 如果宝藏不为0, 清空宝藏, 获得金钱, 提示
-                    h.w(if gift != 0 {
+                    if gift != 0 {
                         map.gift[player.position.0 as usize][player.position.1 as usize] = 0;
                         player.money += gift;
-                        format!("E > 找到了宝藏 +{}KB{}", gift, S)
+                        h.w(format!("E > 找到了宝藏 +{}KB{}", gift, S));
                     } else {
-                        format!("E > 空空如也{}", S)
-                    });
+                        h.w(format!("E > 空空如也{}", S));
+                    }
                 }
 
                 // Q 背包
@@ -235,9 +245,10 @@ pub fn main() {
 
         // 超出边界不允许移动
         if next_y < y_len as u8 && next_x < x_len as u8 {
-            // 不允许移动到空块上
+            // 进入商店
             if map.id[next_y as usize][next_x as usize] == -1 {
-                continue;
+                cls_pro();
+                player = shop::main(player);
             }
             // 触发战斗
             else if map.entity[next_y as usize][next_x as usize].exist {

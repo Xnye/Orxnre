@@ -1,6 +1,7 @@
 mod data;
 mod game;
 mod battle;
+mod shop;
 
 use std::{io, process::exit, ops::Range};
 use colored::*;

@@ -3,7 +3,7 @@
 use colored::{ColoredString, Colorize};
 use lazy_static::lazy_static;
 
-pub const VERSION: &str = "v1.0-beta.14";
+pub const VERSION: &str = "v1.0-beta.15";
 pub const S: &str = "                                                ";
 
 fn c(text: &str, rgb: (u8, u8, u8)) -> ColoredString {
@@ -25,6 +25,7 @@ pub fn TITLE() -> ColoredString {
 
 pub fn block_name(id: i8) -> String {
     match id {
+        -1 => format!("{}", "店".black().on_truecolor(180, 240, 190)),
         0 => format!("{}", c("土", (190, 147, 138))),
         1 => format!("{}", c("草", (121, 204, 109))),
         2 => format!("{}", c("石", (196, 189, 181))),
