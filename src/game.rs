@@ -207,13 +207,13 @@ pub fn main() {
                 Key::Escape => exit(0),
 
                 // WASD 移动
-                Char('w') | Char('W') => next_y = next_y.wrapping_sub(1),
-                Char('s') | Char('S') => next_y = next_y.wrapping_add(1),
-                Char('a') | Char('A') => next_x = next_x.wrapping_sub(1),
-                Char('d') | Char('D') => next_x = next_x.wrapping_add(1),
+                Char('w') | Char('W') | Key::ArrowUp => next_y = next_y.wrapping_sub(1),
+                Char('s') | Char('S') | Key::ArrowDown => next_y = next_y.wrapping_add(1),
+                Char('a') | Char('A') | Key::ArrowLeft => next_x = next_x.wrapping_sub(1),
+                Char('d') | Char('D') | Key::ArrowRight => next_x = next_x.wrapping_add(1),
 
                 // H 帮助
-                Char('h') | Char('H') => h.w("H > WASD 移动 E 探索 Q 背包 H 提示 Esc 退出游戏"),
+                Char('h') | Char('H') | Key::Enter => h.w("H > WASD 移动 E 探索 Q 背包 H 提示 Esc 退出游戏"),
 
                 // E 探索
                 Char('e') | Char('E') => {

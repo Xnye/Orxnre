@@ -3,12 +3,12 @@
 use colored::{ColoredString, Colorize};
 use lazy_static::lazy_static;
 
-pub const VERSION: &str = "v1.0-beta.15";
+pub const VERSION: &str = "v1.0-beta.16";
 pub const S: &str = "                                                ";
 
 fn c(text: &str, rgb: (u8, u8, u8)) -> ColoredString {
     let (r, g, b) = rgb;
-    let mut out = format!("{}", text).truecolor(r, g, b);
+    let out = format!("{}", text).truecolor(r, g, b);
     out
 }
 

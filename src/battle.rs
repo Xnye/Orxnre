@@ -118,7 +118,7 @@ pub fn main(mut a: Player, mut b: Enemy, mut priority: bool) -> (Player, Enemy) 
             }
         } else {
             next_action = Action::Attack;
-            sleep(time::Duration::from_millis(200));
+            sleep(time::Duration::from_millis(150));
         }
         
         // 开始战斗

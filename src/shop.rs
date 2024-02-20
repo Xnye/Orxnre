@@ -82,6 +82,5 @@ pub fn main(mut a: Player) -> Player {
             }
         }
     }
-
     a
 }
