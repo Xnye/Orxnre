@@ -3,13 +3,13 @@ use game::Player;
 use console::Key::*;
 use colored::*;
 
-struct good {
+struct Good {
     name: String,
     price: i32,
 }
-impl good {
+impl Good {
     fn new(name: &str, price: i32) -> Self {
-        good { name: name.to_string(), price }
+        Good { name: name.to_string(), price }
     }
 }
 
@@ -17,9 +17,12 @@ pub fn main(mut a: Player) -> Player {
     let mut b = Buffer::new(); // 主要缓冲区
 
     let goods = vec![
-        good::new("QUIT", -1),
-        good::new("HP+15 <- 300KB", 300),
-        good::new("HP+150 <- 2MB", 2 * 1024),
+        Good::new("QUIT", -1),
+        Good::new("HP+15 <- 300KB", 300),
+        Good::new("HP+150 <- 2MB", 2 * 1024),
+        Good::new("黎明核心 <- 222KB", 222),
+        Good::new("雾霭核心 <- 222KB", 222),
+        Good::new("蛰伏核心 <- 222KB", 222),
     ];
     let mut goods_highlighted = 0; // 高亮位置
     let mut goods_next = 0; // 防溢出
@@ -76,6 +79,24 @@ pub fn main(mut a: Player) -> Player {
                     if a.money >= 2 * 1024 {
                         a.money -= 2 * 1024;
                         a.hp += 150;
+                    } 
+                },
+                "黎明核心 <- 222KB"  => {
+                    if a.money >= 222 {
+                        a.money -= 222;
+                        a.bag[0] += 1;
+                    } 
+                },
+                "雾霭核心 <- 222KB"  => {
+                    if a.money >= 222 {
+                        a.money -= 222;
+                        a.bag[1] += 1;
+                    } 
+                },
+                "蛰伏核心 <- 222KB"  => {
+                    if a.money >= 222 {
+                        a.money -= 222;
+                        a.bag[2] += 1;
                     } 
                 },
                 _ => {}
