@@ -107,7 +107,7 @@ impl Map {
         map
     }
 
-    fn gift_random(&mut self, max: i32, min: i32, tries: u8) -> &mut Map {
+    fn gift_random(&mut self, max: i32, min: i32, tries: u32) -> &mut Map {
         let (x_len, y_len) = self.measure();
         let map = self;
 
@@ -129,17 +129,23 @@ impl Map {
 
     fn print(&self, position: (u8, u8)) -> String {
         let (x_len, y_len) = self.measure();
+        let (x_pos, y_pos) = (position.1 as i32, position.0 as i32);
+        let (x_cam, y_cam) = (7, 7); // 玩家视图位置
 
         let mut out = String::new();
 
-        for y in 0..y_len {
-            for x in 0..x_len {
-                out = if self.entity[y][x].exist {
-                    format!("{}{} ", out, "敌".on_truecolor(200, 120, 120).black())
-                } else if (y as u8, x as u8) != position {
-                    format!("{}{} ", out, block_name(self.id[y][x]))
+        for y in (y_pos - y_cam)..(y_pos + y_cam) {
+            for x in (x_pos - x_cam)..(x_pos + x_cam) {
+                if y < 0 || x < 0 || y >= y_len as i32 || x >= x_len as i32 {
+                    out = format!("{}{} ", out, "　".on_truecolor(0, 0, 0));
                 } else {
-                    format!("{}{} ", out, "您".on_white().black())
+                    out = if self.entity[y as usize][x as usize].exist {
+                        format!("{}{} ", out, "敌".on_truecolor(200, 120, 120).black())
+                    } else if (y as u8, x as u8) != position {
+                        format!("{}{} ", out, block_name(self.id[y as usize][x as usize]))
+                    } else {
+                        format!("{}{} ", out, "您".on_white().black())
+                    }
                 }
             }
             out = format!("{}\n", out);
@@ -164,7 +170,7 @@ pub fn main() {
     let mut b = Buffer::new(); // 主要缓冲区 打印所有内容 (buffer)
     let mut h = Buffer::new(); // 打印提示信息用 (hint)
 
-    let mut map = Map::new(16, 16); // 初始化地图信息
+    let mut map = Map::new(64, 64); // 初始化地图信息
     let (x_len, y_len) = (map.measure().0 as i32, map.measure().0 as i32) ; // 并获取其长度
 
     let mut player = Player::new(); // 初始化玩家信息
@@ -176,10 +182,13 @@ pub fn main() {
         map.map_terrain(2, seed + 2, 190.0, 1);
         map.map_terrain(1, seed + 1, 190.0, 1);
         map.map_terrain(3, seed, 170.0, 0);
+        
+    }
+    for _ in 0..48 {
         map.spawn(random(0..y_len) as u8, random(0..x_len) as u8, EnemyType::Normal(1));
     }
     map.set_random(-1);
-    map.gift_random(300, 200, 25);
+    map.gift_random(300, 200, 400);
 
     cls_pro();
 
