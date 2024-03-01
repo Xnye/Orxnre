@@ -3,7 +3,7 @@
 use colored::{ColoredString, Colorize};
 use lazy_static::lazy_static;
 
-pub const VERSION: &str = "v1.0-beta.17";
+pub const VERSION: &str = "v1.0-beta.18";
 pub const S: &str = "                                                ";
 
 fn c(text: &str, rgb: (u8, u8, u8)) -> ColoredString {

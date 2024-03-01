@@ -134,8 +134,8 @@ impl Map {
 
         let mut out = String::new();
 
-        for y in (y_pos - y_cam)..(y_pos + y_cam) {
-            for x in (x_pos - x_cam)..(x_pos + x_cam) {
+        for y in (y_pos - y_cam)..(y_pos + y_cam + 1) {
+            for x in (x_pos - x_cam)..(x_pos + x_cam + 1) {
                 if y < 0 || x < 0 || y >= y_len as i32 || x >= x_len as i32 {
                     out = format!("{}{} ", out, "　".on_truecolor(0, 0, 0));
                 } else {
