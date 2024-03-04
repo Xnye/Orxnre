@@ -42,6 +42,7 @@ lazy_static!{
     ];
 }
 
+#[allow(dead_code)]
 pub fn item_name(id: i32) -> String {
     let len = || ITEM.len();
 

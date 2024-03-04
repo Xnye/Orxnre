@@ -9,7 +9,7 @@ use Key::Char;
 use crate::{data::{self, S}, battle, shop, Buffer, cls, cls_pro, read, random};
 
 use battle::{Enemy, EnemyType};
-use data::{block_name, item_name};
+use data::block_name;
 
 // 玩家数据
 pub struct Player {
@@ -137,7 +137,7 @@ impl Map {
         for y in (y_pos - y_cam)..(y_pos + y_cam + 1) {
             for x in (x_pos - x_cam)..(x_pos + x_cam + 1) {
                 if y < 0 || x < 0 || y >= y_len as i32 || x >= x_len as i32 {
-                    out = format!("{}{} ", out, "　".on_truecolor(0, 0, 0));
+                    out = format!("{}{} ", out, "　");
                 } else {
                     out = if self.entity[y as usize][x as usize].exist {
                         format!("{}{} ", out, "敌".on_truecolor(200, 120, 120).black())

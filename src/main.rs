@@ -105,6 +105,7 @@ fn main() {
         if menu_selected >= 0 && menu_selected < menu_len {
             match menu[menu_selected as usize].as_str() {
                 "开始游戏" => {
+                    println!("** 地图生成中...");
                     game::main();
                     cls_pro();
                     break;
