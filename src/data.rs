@@ -1,15 +1,16 @@
 #![allow(non_snake_case)]
 
+use std::ops::Range;
 use colored::{ColoredString, Colorize};
 use lazy_static::lazy_static;
+use crate::data::ItemAttr::*;
 
-pub const VERSION: &str = "v1.0-beta.19";
+pub const VERSION: &str = "v1.0-beta.20";
 pub const S: &str = "                                                ";
 
 fn c(text: &str, rgb: (u8, u8, u8)) -> ColoredString {
     let (r, g, b) = rgb;
-    let out = format!("{}", text).truecolor(r, g, b);
-    out
+    text.to_string().truecolor(r, g, b)
 }
 
 // 标题文本颜色
@@ -25,7 +26,7 @@ pub fn TITLE() -> ColoredString {
 
 pub fn block_name(id: i8) -> String {
     match id {
-        -100 | -101 => format!("{}", "门".black().on_truecolor(229, 189, 187)),
+        -2 => format!("{}", "门".black().on_truecolor(229, 189, 187)),
         -1 => format!("{}", "店".black().on_truecolor(180, 240, 190)),
         0 => format!("{}", c("土", (190, 147, 138))),
         1 => format!("{}", c("草", (121, 204, 109))),
@@ -36,21 +37,26 @@ pub fn block_name(id: i8) -> String {
     }
 }
 
-lazy_static!{
-    pub static ref ITEM: [String; 3] = [
-        format!("{}", c("黎明核心", (227, 203, 171))),
-        format!("{}", c("雾霭核心", (168, 219, 187))),
-        format!("{}", c("蛰伏核心", (159, 155, 243))),
-    ];
+#[derive(Clone)]
+pub enum ItemAttr {
+    None,
+    Rarity(i32),
+    Color((u8, u8, u8)),
+    Attack(Range<i32>),
 }
 
-#[allow(dead_code)]
-pub fn item_name(id: i32) -> String {
-    let len = || ITEM.len();
+lazy_static! {
+    static ref NULL: (String, Vec<ItemAttr>) = ("".to_string(), vec![]);
 
-    if id < 0 || id >= len() as i32 { 
-        "-?-".to_string()
-    } else {
-        ITEM[id as usize].clone()
-    }
+    pub static ref ITEM: [(String, Vec<ItemAttr>); 9] = [
+        ("光芒核心".to_string(), vec![Color((227, 203, 171))],),
+        ("消色核心".to_string(), vec![Color((168, 189, 187))],),
+        ("纷争核心".to_string(), vec![Color((159, 155, 243))],),
+        ("Eltaw".to_string(), vec![Rarity(1), Attack(5..5)]),
+        ("Sigma".to_string(), vec![Rarity(1), Attack(4..7)]),
+        ("".to_string(), vec![]),
+        ("".to_string(), vec![]),
+        ("".to_string(), vec![]),
+        ("".to_string(), vec![]),
+    ];
 }

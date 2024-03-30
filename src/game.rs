@@ -3,10 +3,10 @@ use colored::*;
 use console::Key;
 use noise::{NoiseFn, Perlin};
 use rand::{Rng, thread_rng};
-
 use Key::Char;
 
-use crate::{data::{self, S}, battle, shop, Buffer, cls, cls_pro, read, random};
+use crate::data::{self, S};
+use crate::{battle, shop, Buffer, cls, cls_pro, read, random};
 
 use battle::{Enemy, EnemyType};
 use data::block_name;
@@ -35,18 +35,25 @@ impl Player {
     }
 }
 
+#[derive(Clone, PartialEq)]
+enum Act {
+    None,
+    Tp(i8),
+    Gift(i32)
+}
+
 // 地图数据
 #[derive(Clone)]
 struct Map {
     id: Vec<Vec<i8>>,
-    gift: Vec<Vec<i32>>,
+    act: Vec<Vec<Act>>,
     entity: Vec<Vec<Enemy>>,
 }
 
 #[allow(dead_code)]
 impl Map {
     fn new(x: usize, y: usize) -> Self {
-        Map { id: vec![vec![0; x]; y], gift: vec![vec![0; x]; y], entity: vec![vec![Enemy::new_empty(); x]; y] }
+        Map { id: vec![vec![0; x]; y], act: vec![vec![Act::None; x]; y], entity: vec![vec![Enemy::new_empty(); x]; y] }
     }
 
     fn measure(&self) -> (usize, usize) {
@@ -91,8 +98,8 @@ impl Map {
                     _ => Perlin::new(seed),
                 };
 
-                let nx = x as f64 / x_len as f64;
-                let ny = y as f64 / y_len as f64;
+                let nx = (x as f64 / x_len as f64 + 0.5) / 2f64;
+                let ny = (y as f64 / y_len as f64 + 0.5) / 2f64;
                 let noise_value = perlin.get([nx, ny]);
 
                 let next = if (noise_value + 1.0) / 2.0 * 255.0 >= soft_limit {
@@ -114,16 +121,21 @@ impl Map {
 
         for _ in 0..tries {
             let (y, x) = (random(0..y_len as i32), random(0..x_len as i32));
-            map.gift[y as usize][x as usize] = random(min..max);
+            map.act[y as usize][x as usize] = Act::Gift(random(min..max));
         }
         map
     }
 
-    fn set_random(&mut self, id: i8) -> &mut Map {
-        let (x_len, y_len) = self.measure();
+    fn set_random(&mut self, id: i8, act: Act) -> &mut Map {
         let map = self;
-
+        let (x_len, y_len) = map.measure();
         let (y, x) = (random(0..y_len as i32), random(0..x_len as i32));
+
+        match act {
+            Act::None => {},
+            _ => {map.act[y as usize][x as usize] = act}
+        }
+
         map.id[y as usize][x as usize] = id;
         map
     }
@@ -160,7 +172,8 @@ impl Map {
         let mut gift = 0;
 
         if y < y_len as u8 && x < x_len as u8 {
-            gift = self.gift[y as usize][x as usize];
+            // 如果有宝藏, 返回宝藏金额
+            if let Act::Gift(y) = self.act[y as usize][x as usize] { gift = y }
         }
 
         gift
@@ -189,13 +202,13 @@ pub fn main() {
     for _ in 0..48 {
         mapl[0].spawn(random(0..y_len) as u8, random(0..x_len) as u8, EnemyType::Normal(1));
     }
-    mapl[0].set_random(-1); // 商店
-    mapl[0].set_random(-101); // 传送门 to 1
+    mapl[0].set_random(-1, Act::None); // 商店
+    mapl[0].set_random(-2, Act::Tp(1)); // 传送门 to 1
     mapl[0].gift_random(300, 200, 400);
 
     mapl[1].map_terrain(4, seed + 4, 190.0, 1);
-    mapl[1].set_random(-100); // 传送门 to 0
-    mapl[0].gift_random(6000, 200, 40);
+    mapl[1].set_random(-2, Act::Tp(0)); // 传送门 to 0
+    mapl[1].gift_random(6000, 200, 40);
 
     map = mapl[0].clone();
 
@@ -203,12 +216,14 @@ pub fn main() {
 
     // 主循环
     loop {
+        // 切换地图
         if goto != local {
             mapl[local as usize] = map.clone();
             map = mapl[goto as usize].clone();
             local = goto;
         }
         let (x_len, y_len) = (map.measure().0 as i32, map.measure().0 as i32);
+        
         loop {
             cls();
     
@@ -247,7 +262,7 @@ pub fn main() {
     
                         // 如果宝藏不为0, 清空宝藏, 获得金钱, 提示
                         if gift != 0 {
-                            map.gift[player.position.0 as usize][player.position.1 as usize] = 0;
+                            map.act[player.position.0 as usize][player.position.1 as usize] = Act::Gift(0);
                             player.money += gift;
                             h.w(format!("E > 找到了宝藏 +{}KB{}", gift, S));
                         } else {
@@ -259,7 +274,17 @@ pub fn main() {
                     Char('q') | Char('Q') => {
                         h.wl(format!("Q > 背包{}", S));
                         for (index, item) in data::ITEM.iter().enumerate() {
-                            h.w(format!("{} {} ", item, player.bag[index]));
+                            let (item_name, item_attr_list) = item;
+                            let mut item_name = item_name.clone().white();
+                            
+                            for item_attr in item_attr_list {
+                                match item_attr {
+                                    data::ItemAttr::Color(rgb) => item_name = item_name.truecolor(rgb.0, rgb.1, rgb.2),
+                                    _ => {}
+                                };
+                            }
+                            
+                            h.w(format!("{} x{} ", item_name, player.bag[index]));
                         }
                         h.w(S);
                     }
@@ -277,8 +302,10 @@ pub fn main() {
                     player = shop::main(player);
                 }
                 // 传送门
-                else if map.id[next_y as usize][next_x as usize] <= -100 {
-                    goto = - map.id[next_y as usize][next_x as usize] - 100; // f(x) = - x - 100
+                else if map.id[next_y as usize][next_x as usize] == -2 {
+                    if let Act::Tp(destination) = map.act[next_y as usize][next_x as usize] {
+                        goto = destination;
+                    }
                     break;
                 }
                 // 触发战斗

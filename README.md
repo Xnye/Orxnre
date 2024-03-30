@@ -11,4 +11,4 @@
 
 [**orxnre.github.io**](https://orxnre.github.io) | [更新日志](https://orxnre.github.io/c) | [历史版本](https://orxnre.github.io/d)
 
-Contact Xnye ([Bilibili](https://space.bilibili.com/357881808))
+Contact: Xnye a.k.a YikuaiYC ([Bilibili](https://space.bilibili.com/357881808))

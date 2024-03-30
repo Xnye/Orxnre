@@ -20,9 +20,9 @@ pub fn main(mut a: Player) -> Player {
         Good::new("QUIT", -1),
         Good::new("HP+15 <- 300KB", 300),
         Good::new("HP+150 <- 2MB", 2 * 1024),
-        Good::new("黎明核心 <- 222KB", 222),
-        Good::new("雾霭核心 <- 222KB", 222),
-        Good::new("蛰伏核心 <- 222KB", 222),
+        Good::new("光芒核心 <- 222KB", 222),
+        Good::new("消色核心 <- 222KB", 222),
+        Good::new("纷争核心 <- 222KB", 222),
     ];
     let mut goods_highlighted = 0; // 高亮位置
     let mut goods_next = 0; // 防溢出
@@ -52,8 +52,8 @@ pub fn main(mut a: Player) -> Player {
             cls();
             goods_selected = -1;
             match key {
-                ArrowUp | Char('w') | Char('W') => goods_next = goods_next - 1,
-                ArrowDown | Char('s') | Char('S') => goods_next = goods_next + 1,
+                ArrowUp | Char('w') | Char('W') => goods_next -= 1,
+                ArrowDown | Char('s') | Char('S') => goods_next += 1,
                 Enter => goods_selected = goods_highlighted,
                 _ => {
                     continue;
@@ -81,19 +81,19 @@ pub fn main(mut a: Player) -> Player {
                         a.hp += 150;
                     } 
                 },
-                "黎明核心 <- 222KB"  => {
+                "光芒核心 <- 222KB"  => {
                     if a.money >= 222 {
                         a.money -= 222;
                         a.bag[0] += 1;
                     } 
                 },
-                "雾霭核心 <- 222KB"  => {
+                "消色核心 <- 222KB"  => {
                     if a.money >= 222 {
                         a.money -= 222;
                         a.bag[1] += 1;
                     } 
                 },
-                "蛰伏核心 <- 222KB"  => {
+                "纷争核心 <- 222KB"  => {
                     if a.money >= 222 {
                         a.money -= 222;
                         a.bag[2] += 1;
