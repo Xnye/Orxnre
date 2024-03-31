@@ -1,4 +1,5 @@
 use std::process::exit;
+use std::collections::HashMap;
 use colored::*;
 use console::Key;
 use noise::{NoiseFn, Perlin};
@@ -18,11 +19,11 @@ pub struct Player {
     pub max_hp: i32,
     pub hp: i32,
     pub atk: i32,
-    pub bag: [i32; 5],
+    pub bag: HashMap<u8, i32>,
 }
 
 impl Player {
-    fn new() -> Self { Player { position: (0, 0), money: 0, max_hp: 500, hp: 500, atk: 20, bag: [0; 5]} }
+    fn new() -> Self { Player { position: (0, 0), money: 0, max_hp: 500, hp: 500, atk: 20, bag: HashMap::new() } }
 
     pub fn convert(&self) -> String {
         if self.money < 1024 {
@@ -273,18 +274,20 @@ pub fn main() {
                     // Q 背包
                     Char('q') | Char('Q') => {
                         h.wl(format!("Q > 背包{}", S));
-                        for (index, item) in data::ITEM.iter().enumerate() {
-                            let (item_name, item_attr_list) = item;
+                        for (item_index, amount) in player.bag.clone() {
+                            let (item_name, item_attr_list) = &data::ITEM[item_index as usize];
                             let mut item_name = item_name.clone().white();
-                            
+
                             for item_attr in item_attr_list {
                                 match item_attr {
                                     data::ItemAttr::Color(rgb) => item_name = item_name.truecolor(rgb.0, rgb.1, rgb.2),
                                     _ => {}
                                 };
                             }
-                            
-                            h.w(format!("{} x{} ", item_name, player.bag[index]));
+
+                            if amount > 0 {
+                                h.w(format!("{} x{} ", item_name, amount));
+                            }
                         }
                         h.w(S);
                     }

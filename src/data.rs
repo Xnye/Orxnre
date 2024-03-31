@@ -5,7 +5,7 @@ use colored::{ColoredString, Colorize};
 use lazy_static::lazy_static;
 use crate::data::ItemAttr::*;
 
-pub const VERSION: &str = "v1.0-beta.20";
+pub const VERSION: &str = "v1.0-beta.21";
 pub const S: &str = "                                                ";
 
 fn c(text: &str, rgb: (u8, u8, u8)) -> ColoredString {
@@ -46,7 +46,7 @@ pub enum ItemAttr {
 }
 
 lazy_static! {
-    static ref NULL: (String, Vec<ItemAttr>) = ("".to_string(), vec![]);
+    static ref EMPTY: (String, Vec<ItemAttr>) = ("".to_string(), vec![]);
 
     pub static ref ITEM: [(String, Vec<ItemAttr>); 9] = [
         ("光芒核心".to_string(), vec![Color((227, 203, 171))],),
@@ -54,9 +54,11 @@ lazy_static! {
         ("纷争核心".to_string(), vec![Color((159, 155, 243))],),
         ("Eltaw".to_string(), vec![Rarity(1), Attack(5..5)]),
         ("Sigma".to_string(), vec![Rarity(1), Attack(4..7)]),
-        ("".to_string(), vec![]),
-        ("".to_string(), vec![]),
-        ("".to_string(), vec![]),
-        ("".to_string(), vec![]),
+        EMPTY.clone(),
+        EMPTY.clone(),
+        EMPTY.clone(),
+        EMPTY.clone(),
     ];
+    
+    pub static ref ITEM_LEN: usize = ITEM.len();
 }

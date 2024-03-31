@@ -84,19 +84,19 @@ pub fn main(mut a: Player) -> Player {
                 "光芒核心 <- 222KB"  => {
                     if a.money >= 222 {
                         a.money -= 222;
-                        a.bag[0] += 1;
+                        *a.bag.entry(0).or_insert(0) += 1;
                     } 
                 },
                 "消色核心 <- 222KB"  => {
                     if a.money >= 222 {
                         a.money -= 222;
-                        a.bag[1] += 1;
+                        *a.bag.entry(1).or_insert(0) += 1;
                     } 
                 },
                 "纷争核心 <- 222KB"  => {
                     if a.money >= 222 {
                         a.money -= 222;
-                        a.bag[2] += 1;
+                        *a.bag.entry(2).or_insert(0) += 1;
                     } 
                 },
                 _ => {}
