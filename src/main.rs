@@ -87,8 +87,8 @@ fn main() {
         // 处理按键
         if let Ok(key) = read() {
             match key {
-                Key::ArrowUp | Char('w') | Char('W') => menu_next = menu_next - 1,
-                Key::ArrowDown | Char('s') | Char('S') => menu_next = menu_next + 1,
+                Key::ArrowUp | Char('w') | Char('W') => menu_next -= 1,
+                Key::ArrowDown | Char('s') | Char('S') => menu_next += 1,
                 Key::Enter => menu_selected = menu_highlighted,
                 _ => {
                     cls();

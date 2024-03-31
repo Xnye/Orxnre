@@ -63,8 +63,10 @@ pub fn main(mut a: Player, mut b: Enemy, mut priority: bool) -> (Player, Enemy) 
         // [ ENEMY 67/100 ] (归零显示红色)
 
         // 打印战斗日志并填补空行
-        for i in (if log.len() <= log_line {0} else {log.len().checked_sub(log_line).unwrap_or(0)})..log.len() {
-            s.wl(log[i].clone());
+        // log.len()-log_line..log.len()
+        let start_index = if log.len() <= log_line {0} else {log.len().saturating_sub(log_line)};
+        for log_entry in log[start_index..].iter() {
+            s.wl(log_entry.clone());
         }
         for _ in 0..(log_line as i32).checked_sub(log.len() as i32).unwrap_or(0) {
             s.wl("");
@@ -92,8 +94,8 @@ pub fn main(mut a: Player, mut b: Enemy, mut priority: bool) -> (Player, Enemy) 
 
             if let Ok(key) = read() {
                 match key {
-                    ArrowLeft | Char('a') | Char('A') => sel_next = sel_next - 1,
-                    ArrowRight | Char('d') | Char('D') => sel_next = sel_next + 1,
+                    ArrowLeft | Char('a') | Char('A') => sel_next -= 1,
+                    ArrowRight | Char('d') | Char('D') => sel_next += 1,
                     Enter => sel_selected = sel_highlighted,
                     _ => {}
                 }
