@@ -32,7 +32,7 @@ pub fn main(mut a: Player) -> Player {
     loop {
         b.wl(format!("{} | {}{}", data::TITLE(), data::VERSION, data::S));
         b.wl(format!("${} | {}/{}{}", a.convert(), a.hp, a.max_hp, data::S));
-        b.wl("[ 商店 ]");
+        b.wl("< 商店 >");
 
         for (index, selected) in goods.iter().enumerate() {
             if goods_highlighted == index as i8 {

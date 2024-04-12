@@ -5,7 +5,7 @@ use colored::{ColoredString, Colorize};
 use lazy_static::lazy_static;
 use crate::data::ItemAttr::*;
 
-pub const VERSION: &str = "v1.0-beta.21";
+pub const VERSION: &str = "v1.0-beta.22";
 pub const S: &str = "                                                ";
 
 fn c(text: &str, rgb: (u8, u8, u8)) -> ColoredString {

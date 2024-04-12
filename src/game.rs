@@ -1,5 +1,5 @@
 use std::process::exit;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use colored::*;
 use console::Key;
 use noise::{NoiseFn, Perlin};
@@ -7,7 +7,7 @@ use rand::{Rng, thread_rng};
 use Key::Char;
 
 use crate::data::{self, S};
-use crate::{battle, shop, Buffer, cls, cls_pro, read, random};
+use crate::{battle, shop, Buffer, cls, cls_pro, read, random, bag};
 
 use battle::{Enemy, EnemyType};
 use data::block_name;
@@ -19,11 +19,12 @@ pub struct Player {
     pub max_hp: i32,
     pub hp: i32,
     pub atk: i32,
-    pub bag: HashMap<u8, i32>,
+    pub bag: BTreeMap<u8, i32>,
+    pub hand: u8,
 }
 
 impl Player {
-    fn new() -> Self { Player { position: (0, 0), money: 0, max_hp: 500, hp: 500, atk: 20, bag: HashMap::new() } }
+    fn new() -> Self { Player { position: (0, 0), money: 0, max_hp: 500, hp: 500, atk: 20, bag: BTreeMap::new(), hand: 0 } }
 
     pub fn convert(&self) -> String {
         if self.money < 1024 {
@@ -82,14 +83,14 @@ impl Map {
             },
             EnemyType::Full(e) => e,
         };
-        
+
         map
     }
 
     fn map_terrain(&mut self, id: i8, seed: u32, soft_limit: f64, form: u8) -> &mut Map {
         let (x_len, y_len) = self.measure();
         let map = self;
-        
+
         for y in 0..y_len {
             let mut row: Vec<i8> = Vec::new();
             for x in 0..x_len {
@@ -184,7 +185,7 @@ impl Map {
 pub fn main() {
     let mut b = Buffer::new(); // 主要缓冲区 打印所有内容 (buffer)
     let mut h = Buffer::new(); // 打印提示信息用 (hint)
-    
+
     let mut player = Player::new(); // 初始化玩家信息
     let seed: u32 = thread_rng().gen(); // 种子
     let mut local: i8 = 0; // 当前地图编号
@@ -198,7 +199,7 @@ pub fn main() {
     for _ in 0..3 {
         mapl[0].map_terrain(2, seed + 2, 190.0, 1);
         mapl[0].map_terrain(1, seed + 1, 190.0, 1);
-        mapl[0].map_terrain(3, seed, 170.0, 0); 
+        mapl[0].map_terrain(3, seed, 170.0, 0);
     }
     for _ in 0..48 {
         mapl[0].spawn(random(0..y_len) as u8, random(0..x_len) as u8, EnemyType::Normal(1));
@@ -224,43 +225,43 @@ pub fn main() {
             local = goto;
         }
         let (x_len, y_len) = (map.measure().0 as i32, map.measure().0 as i32);
-        
+
         loop {
             cls();
-    
+
             b.wl(format!("{} | {}{}", data::TITLE(), data::VERSION, S)); // 标题
             // Orxnre | v1.0-beta.3
-    
+
             b.wl(format!("${} | {}/{}{}", player.convert(), player.hp, player.max_hp, S)); // 玩家信息
             // 5.14MB | 495/500
-    
+
             b.wl(map.print(player.position)); // 写入地图
             b.wl(if h.modified {h.read()} else {format!("{S}\n{S}").white()}); // 写入提示消息
             b.wl(S); // 空行
             b.print(); // 打印到屏幕
-    
+
             h = Buffer::new(); // 清空消息
-    
+
             let (mut next_y, mut next_x) = player.position;
-    
+
             if let Ok(key) = read() {
                 match key {
                     // Esc 退出
                     Key::Escape => exit(0),
-    
+
                     // WASD 移动
                     Char('w') | Char('W') | Key::ArrowUp => next_y = next_y.wrapping_sub(1),
                     Char('s') | Char('S') | Key::ArrowDown => next_y = next_y.wrapping_add(1),
                     Char('a') | Char('A') | Key::ArrowLeft => next_x = next_x.wrapping_sub(1),
                     Char('d') | Char('D') | Key::ArrowRight => next_x = next_x.wrapping_add(1),
-    
+
                     // H 帮助
                     Char('h') | Char('H') | Key::Enter => h.w("H > WASD 移动 E 探索 Q 背包 H 提示 Esc 退出游戏"),
-    
+
                     // E 探索
                     Char('e') | Char('E') => {
                         let gift = map.explore(player.position);
-    
+
                         // 如果宝藏不为0, 清空宝藏, 获得金钱, 提示
                         if gift != 0 {
                             map.act[player.position.0 as usize][player.position.1 as usize] = Act::Gift(0);
@@ -270,33 +271,18 @@ pub fn main() {
                             h.w(format!("E > 空空如也{}", S));
                         }
                     }
-    
+
                     // Q 背包
                     Char('q') | Char('Q') => {
-                        h.wl(format!("Q > 背包{}", S));
-                        for (item_index, amount) in player.bag.clone() {
-                            let (item_name, item_attr_list) = &data::ITEM[item_index as usize];
-                            let mut item_name = item_name.clone().white();
-
-                            for item_attr in item_attr_list {
-                                match item_attr {
-                                    data::ItemAttr::Color(rgb) => item_name = item_name.truecolor(rgb.0, rgb.1, rgb.2),
-                                    _ => {}
-                                };
-                            }
-
-                            if amount > 0 {
-                                h.w(format!("{} x{} ", item_name, amount));
-                            }
-                        }
-                        h.w(S);
+                        cls_pro();
+                        player = bag::main(player);
                     }
-    
+
                     // Others 处理默认情况
                     _ => {}
                 };
             }
-    
+
             // 超出边界不允许移动
             if next_y < y_len as u8 && next_x < x_len as u8 {
                 // 进入商店
