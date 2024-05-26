@@ -47,8 +47,6 @@ pub fn main(mut a: Player) -> Player {
         for item_attr in bag_selected_attr {
             if let ItemAttr::Rarity(_rarity) = item_attr { item_selectable = true };
         }
-
-        item_selectable = true;
         
         b.w("[ ← 返回 ] ");
         b.w(if item_selectable { "[ Enter 使用 ] ".white() } else {"  Enter 使用   ".truecolor(150, 150, 150)});

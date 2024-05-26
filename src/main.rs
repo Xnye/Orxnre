@@ -64,10 +64,8 @@ fn main() {
     let mut menu_next = 0; // 防溢出
     let mut menu_selected = -1; // 回车后选中的高亮位置
     let menu_len = menu.len() as i8;
-
-
+    
     print!("{}", Style::new().apply_to("")); // 应用虚拟终端 (狗皮膏药: 暂时解决Win10默认终端不适配ANSI转义的问题)
-
     cls_pro();
 
     loop {

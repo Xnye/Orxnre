@@ -1,5 +1,5 @@
 use crate::{game, Buffer, cls, cls_pro, read, data};
-use std::{thread::sleep, time};
+use std::{thread, time};
 use colored::{Colorize, ColoredString};
 use game::Player;
 use console::Key::*;
@@ -27,6 +27,11 @@ pub enum EnemyType {
 enum Action {
     Skip,
     Attack,
+    End,
+}
+
+fn time_sleep(ms: u64) {
+    thread::sleep(time::Duration::from_millis(ms));
 }
 
 pub fn main(mut a: Player, mut b: Enemy, mut priority: bool) -> (Player, Enemy) {
@@ -38,7 +43,7 @@ pub fn main(mut a: Player, mut b: Enemy, mut priority: bool) -> (Player, Enemy) 
     let mut march: bool = true; // 要继续对战吗?
     let mut march2: bool = true; // 便于打印结果
     let mut auto_fight: bool = false; // 自动战斗
-    let mut next_action: Action; // 下一步动作
+    let mut next_action: Action = Action::Skip; // 下一步动作
     // 菜单相关
     let sel = vec![
         "AUTO".to_string(),
@@ -53,18 +58,18 @@ pub fn main(mut a: Player, mut b: Enemy, mut priority: bool) -> (Player, Enemy) 
     cls_pro();
 
     while march2 {
-        if !march {march2 = !march2}
+        if !march { march2 = !march2 }
         // 打印标题
         s.wl(format!("{} | {}{}", data::TITLE(), data::VERSION, data::S)); // 标题
         // Orxnre | v1.0-beta.3
         s.wl(format!("${} | {}/{}{}", a.convert(), a.hp, a.max_hp, data::S)); // 玩家信息
         // 5.14MB | 495/500
-        s.wl(format!("[ ENEMY {} ]{}", if b.hp < 0 {format!("0/{}", b.max_hp).red()} else {format!("{}/{}", b.hp, b.max_hp).white()}, data::S));
+        s.wl(format!("[ ENEMY {} ]{}", if b.hp < 0 { format!("0/{}", b.max_hp).red() } else { format!("{}/{}", b.hp, b.max_hp).white() }, data::S));
         // [ ENEMY 67/100 ] (归零显示红色)
 
         // 打印战斗日志并填补空行
         // log.len()-log_line..log.len()
-        let start_index = if log.len() <= log_line {0} else {log.len().saturating_sub(log_line)};
+        let start_index = if log.len() <= log_line { 0 } else { log.len().saturating_sub(log_line) };
         for log_entry in log[start_index..].iter() {
             s.wl(log_entry.clone());
         }
@@ -73,16 +78,17 @@ pub fn main(mut a: Player, mut b: Enemy, mut priority: bool) -> (Player, Enemy) 
         }
 
         sel_selected = -1;
-        next_action = if a.hp <= 0 || b.hp <= 0 { Action::Attack } else { Action::Skip };
 
         if auto_fight { s.wl("\n AUTO PLAY ".black().on_bright_green()); }
 
         cls();
         s.print();
 
-        if !auto_fight {
-            // 打印选项
+        if a.hp <= 0 || b.hp <= 0 { // 对战结束
+            next_action = Action::End;
+        } else if !auto_fight { // 轮到你了
             for (index, selected) in sel.iter().enumerate() {
+                let selected = if !priority && selected == "ATTACK" { "CONTINUE" } else { selected };
                 c.w(format!("{} ", if sel_highlighted == index as i8 {
                     format!(" {} ", selected).on_white().black()
                 } else {
@@ -118,19 +124,19 @@ pub fn main(mut a: Player, mut b: Enemy, mut priority: bool) -> (Player, Enemy) 
                     _ => {}
                 }
             }
-        } else {
+        } else if auto_fight { // 自动游玩
             next_action = Action::Attack;
-            sleep(time::Duration::from_millis(150));
+            time_sleep(150);
         }
-        
+
         // 开始战斗
         match next_action {
             Action::Attack => {
                 march = !march;
                 // 判断双方状态
-                let log_entry: ColoredString = format!("{}{}", if a.hp <= 0 { 
+                let log_entry: ColoredString = format!("{}{}", if a.hp <= 0 {
                     "你寄了".red()
-                } else if b.hp <= 0 { 
+                } else if b.hp <= 0 {
                     format!("你征服了敌人 +{}KB", b.reward).green()
                 } else {
                     // 如果对战未结束则为 true, 反之亦然
@@ -141,16 +147,20 @@ pub fn main(mut a: Player, mut b: Enemy, mut priority: bool) -> (Player, Enemy) 
                         b.hp -= a.atk;
                         format!("你造成了 {} 伤害", a.atk).white()
                     } else {
+                        time_sleep(60);
                         a.hp -= b.atk;
                         format!("敌方造成了 {} 伤害", b.atk).yellow()
                     }
                 }, data::S).white();
+
                 log.push(log_entry);
             }
+            Action::End => { break; }
             _ => {}
         }
+        next_action = Action::Skip;
     }
-    println!("按下任意键继续...");
+    println!("按下任意键继续...{}", data::S);
     let _ = read();
 
     (a, b)

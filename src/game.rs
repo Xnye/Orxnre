@@ -295,7 +295,6 @@ pub fn main() {
                     if let Act::Tp(destination) = map.act[next_y as usize][next_x as usize] {
                         goto = destination;
                     }
-                    break;
                 }
                 // 触发战斗
                 else if map.entity[next_y as usize][next_x as usize].exist {
