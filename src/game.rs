@@ -1,13 +1,13 @@
-use std::process::exit;
-use std::collections::BTreeMap;
 use colored::*;
 use console::Key;
 use noise::{NoiseFn, Perlin};
-use rand::{Rng, thread_rng};
+use rand::{thread_rng, Rng};
+use std::collections::BTreeMap;
+use std::process::exit;
 use Key::Char;
 
-use crate::data::{self, S};
-use crate::{battle, shop, Buffer, cls, cls_pro, read, random, bag};
+use crate::data::{self, ItemAttr, S, SS};
+use crate::{bag, battle, cls, cls_pro, random, read, shop, time_sleep, Buffer};
 
 use battle::{Enemy, EnemyType};
 use data::block_name;
@@ -24,9 +24,19 @@ pub struct Player {
 }
 
 impl Player {
-    fn new() -> Self { Player { position: (0, 0), money: 0, max_hp: 500, hp: 500, atk: 20, bag: BTreeMap::new(), hand: 0 } }
+    fn new() -> Self {
+        Player {
+            position: (0, 0),
+            money: 0,
+            max_hp: 500,
+            hp: 500,
+            atk: 20,
+            bag: BTreeMap::new(),
+            hand: 0,
+        }
+    }
 
-    pub fn convert(&self) -> String {
+    pub fn money_convert(&self) -> String {
         if self.money < 1024 {
             format!("{}.00KB", self.money)
         } else if self.money < 1048576 {
@@ -41,7 +51,7 @@ impl Player {
 enum Act {
     None,
     Tp(i8),
-    Gift(i32)
+    Gift(i32),
 }
 
 // 地图数据
@@ -55,7 +65,11 @@ struct Map {
 #[allow(dead_code)]
 impl Map {
     fn new(x: usize, y: usize) -> Self {
-        Map { id: vec![vec![0; x]; y], act: vec![vec![Act::None; x]; y], entity: vec![vec![Enemy::new_empty(); x]; y] }
+        Map {
+            id: vec![vec![0; x]; y],
+            act: vec![vec![Act::None; x]; y],
+            entity: vec![vec![Enemy::new_empty(); x]; y],
+        }
     }
 
     fn measure(&self) -> (usize, usize) {
@@ -74,13 +88,13 @@ impl Map {
         let map = self;
 
         map.entity[y as usize][x as usize] = match e {
-            EnemyType::Normal(level ) => {
+            EnemyType::Normal(level) => {
                 let l = level as i32;
                 let hp = 90 + l * 10; // 血量 f(x) = 90 + 10x
                 let atk = 12 + l * 3; // 攻击 f(x) = 12 + 3x
-                let award = 500 + l * 100; // 奖励 f(x) = (600 + 100x) ± 200
-                Enemy::new(hp, hp, atk, random(award .. award + 200))
-            },
+                let award = 750 + l * 200; // 奖励 f(x) = (750 + 200x) ± 200
+                Enemy::new(hp, hp, atk, random(award..award + 200))
+            }
             EnemyType::Full(e) => e,
         };
 
@@ -95,7 +109,7 @@ impl Map {
             let mut row: Vec<i8> = Vec::new();
             for x in 0..x_len {
                 let perlin = match form {
-                    0 => Perlin::new(seed), // 默认
+                    0 => Perlin::new(seed),                          // 默认
                     1 => Perlin::new(seed + (y * x_len + x) as u32), // 散点
                     _ => Perlin::new(seed),
                 };
@@ -134,8 +148,8 @@ impl Map {
         let (y, x) = (random(0..y_len as i32), random(0..x_len as i32));
 
         match act {
-            Act::None => {},
-            _ => {map.act[y as usize][x as usize] = act}
+            Act::None => {}
+            _ => map.act[y as usize][x as usize] = act,
         }
 
         map.id[y as usize][x as usize] = id;
@@ -175,14 +189,16 @@ impl Map {
 
         if y < y_len as u8 && x < x_len as u8 {
             // 如果有宝藏, 返回宝藏金额
-            if let Act::Gift(y) = self.act[y as usize][x as usize] { gift = y }
+            if let Act::Gift(y) = self.act[y as usize][x as usize] {
+                gift = y
+            }
         }
 
         gift
     }
 }
-
-pub fn main() {
+#[warn(unused_assignments)]
+pub fn main(enable_debug: bool) {
     let mut b = Buffer::new(); // 主要缓冲区 打印所有内容 (buffer)
     let mut h = Buffer::new(); // 打印提示信息用 (hint)
 
@@ -193,51 +209,81 @@ pub fn main() {
 
     // 初始化地图
     let mut map;
-    let mut mapl: Vec<Map> = vec![Map::new(64, 64); 2];
+    let mut map_list: Vec<Map> = vec![Map::new(64, 64); 2];
 
-    let (x_len, y_len) = (mapl[0].measure().0 as i32, mapl[0].measure().0 as i32);
+    let (x_len, y_len) = (
+        map_list[0].measure().0 as i32,
+        map_list[0].measure().0 as i32,
+    );
     for _ in 0..3 {
-        mapl[0].map_terrain(2, seed + 2, 190.0, 1);
-        mapl[0].map_terrain(1, seed + 1, 190.0, 1);
-        mapl[0].map_terrain(3, seed, 170.0, 0);
+        map_list[0].map_terrain(2, seed + 2, 190.0, 1);
+        map_list[0].map_terrain(1, seed + 1, 190.0, 1);
+        map_list[0].map_terrain(3, seed, 170.0, 0);
     }
     for _ in 0..48 {
-        mapl[0].spawn(random(0..y_len) as u8, random(0..x_len) as u8, EnemyType::Normal(1));
+        map_list[0].spawn(
+            random(0..y_len) as u8,
+            random(0..x_len) as u8,
+            EnemyType::Normal(1),
+        );
     }
-    mapl[0].set_random(-1, Act::None); // 商店
-    mapl[0].set_random(-2, Act::Tp(1)); // 传送门 to 1
-    mapl[0].gift_random(300, 200, 400);
+    for l in 0..5 {
+        map_list[1].spawn(
+            random(0..y_len) as u8,
+            random(0..x_len) as u8,
+            EnemyType::Normal((l + 2) * 3),
+        );
+    }
+    map_list[0].set_random(-1, Act::None); // 商店
+    map_list[0].set_random(-2, Act::Tp(1)); // 传送门 to 1
+    map_list[0].gift_random(300, 200, 400);
 
-    mapl[1].map_terrain(4, seed + 4, 190.0, 1);
-    mapl[1].set_random(-2, Act::Tp(0)); // 传送门 to 0
-    mapl[1].gift_random(6000, 200, 40);
+    map_list[1].map_terrain(4, seed + 4, 190.0, 1);
+    map_list[1].set_random(-2, Act::Tp(0)); // 传送门 to 0
+    map_list[1].gift_random(6000, 200, 40);
 
-    map = mapl[0].clone();
+    map = map_list[0].clone();
 
     cls_pro();
 
+    let basic_info = || -> String {
+        format!(
+            "{} | {}{}{}",
+            data::TITLE(),
+            data::VERSION,
+            if enable_debug { " | DEBUG" } else { "" },
+            S
+        )
+    };
+
+    if enable_debug {
+        player.money = 9999999;
+    }
+
     // 主循环
-    loop {
+    'main: loop {
         // 切换地图
         if goto != local {
-            mapl[local as usize] = map.clone();
-            map = mapl[goto as usize].clone();
+            map = map_list[goto as usize].clone();
             local = goto;
         }
         let (x_len, y_len) = (map.measure().0 as i32, map.measure().0 as i32);
 
-        loop {
+        'minor: loop {
             cls();
 
-            b.wl(format!("{} | {}{}", data::TITLE(), data::VERSION, S)); // 标题
+            b.wl(basic_info());
+            b.wl(format!("${} | {}/{}{}", player.money_convert(), player.hp, player.max_hp, S));
             // Orxnre | v1.0-beta.3
-
-            b.wl(format!("${} | {}/{}{}", player.convert(), player.hp, player.max_hp, S)); // 玩家信息
             // 5.14MB | 495/500
 
             b.wl(map.print(player.position)); // 写入地图
-            b.wl(if h.modified {h.read()} else {format!("{S}\n{S}").white()}); // 写入提示消息
-            b.wl(S); // 空行
+            b.wl(if h.modified {
+                h.read()
+            } else {
+                format!("{SS}\n{SS}").white()
+            }); // 写入提示消息
+            b.wl(SS); // 空行
             b.print(); // 打印到屏幕
 
             h = Buffer::new(); // 清空消息
@@ -256,7 +302,9 @@ pub fn main() {
                     Char('d') | Char('D') | Key::ArrowRight => next_x = next_x.wrapping_add(1),
 
                     // H 帮助
-                    Char('h') | Char('H') | Key::Enter => h.w("H > WASD 移动 E 探索 Q 背包 H 提示 Esc 退出游戏"),
+                    Char('h') | Char('H') | Key::Enter => {
+                        h.w("H > WASD 移动 E 探索 Q 背包 H 提示 P 耕地 Esc 退出游戏")
+                    }
 
                     // E 探索
                     Char('e') | Char('E') => {
@@ -264,7 +312,8 @@ pub fn main() {
 
                         // 如果宝藏不为0, 清空宝藏, 获得金钱, 提示
                         if gift != 0 {
-                            map.act[player.position.0 as usize][player.position.1 as usize] = Act::Gift(0);
+                            map.act[player.position.0 as usize][player.position.1 as usize] =
+                                Act::Gift(0);
                             player.money += gift;
                             h.w(format!("E > 找到了宝藏 +{}KB{}", gift, S));
                         } else {
@@ -275,7 +324,23 @@ pub fn main() {
                     // Q 背包
                     Char('q') | Char('Q') => {
                         cls_pro();
-                        player = bag::main(player);
+                        (player, _) = bag::main(player, ItemAttr::None);
+                    }
+
+                    // P 耕地
+                    Char('p') | Char('P') => {
+                        // 检查是否有锄头
+                        let (y, x) = (player.position.0 as usize, player.position.1 as usize);
+                        if player.bag.contains_key(&3) {
+                            if map.id[y][x] == 0 || map.id[y][x] == 1 {
+                                map.id[y][x] = 5;
+                                h.w(format!("P > 耕地成功{}", S));
+                            } else {
+                                h.w(format!("P > 此处无法耕地{}", S));
+                            }
+                        } else {
+                            h.w(format!("P > 没有锄{}", S));
+                        }
                     }
 
                     // Others 处理默认情况
@@ -294,25 +359,39 @@ pub fn main() {
                 else if map.id[next_y as usize][next_x as usize] == -2 {
                     if let Act::Tp(destination) = map.act[next_y as usize][next_x as usize] {
                         goto = destination;
+                        break 'minor;
                     }
                 }
                 // 触发战斗
                 else if map.entity[next_y as usize][next_x as usize].exist {
-                    let (a, b) = battle::main(player, map.entity[next_y as usize][next_x as usize].clone(), true);
+                    let (a, b) = battle::main(
+                        player,
+                        map.entity[next_y as usize][next_x as usize].clone(),
+                        true,
+                    );
                     player = a;
-                    map.entity[next_y as usize][next_x as usize] = if player.hp <= 0 { // 玩家失败
-                        break;
-                    } else if b.hp > 0 { // 敌人存活
+                    map.entity[next_y as usize][next_x as usize] = if player.hp <= 0 {
+                        // 玩家失败
+                        break 'main;
+                    } else if b.hp > 0 {
+                        // 敌人存活
                         b
-                    } else { // 敌人被击败
+                    } else {
+                        // 敌人被击败
                         player.money += b.reward;
                         Enemy::new_empty()
                     };
-                }
-                else {
+                } else {
                     player.position = (next_y, next_x);
                 }
             }
         }
     }
+    cls_pro();
+    b.wl(basic_info());
+    b.wl("✖ 你失败了");
+    b.print();
+    time_sleep(1500);
+    println!("按下任意键继续...");
+    let _ = read();
 }

@@ -1,7 +1,7 @@
-use crate::{data, game, Buffer, read, cls};
-use game::Player;
-use console::Key::*;
+use crate::{cls, data, game, read, Buffer};
 use colored::*;
+use console::Key::*;
+use game::Player;
 
 struct Good {
     name: String,
@@ -9,7 +9,10 @@ struct Good {
 }
 impl Good {
     fn new(name: &str, price: i32) -> Self {
-        Good { name: name.to_string(), price }
+        Good {
+            name: name.to_string(),
+            price,
+        }
     }
 }
 
@@ -18,11 +21,12 @@ pub fn main(mut a: Player) -> Player {
 
     let goods = vec![
         Good::new("QUIT", -1),
-        Good::new("HP+15 <- 300KB", 300),
-        Good::new("HP+150 <- 2MB", 2 * 1024),
+        Good::new("HP+15 <- 200KB", 300),
+        Good::new("HP+150 <- 1.5MB", 512 + 1024),
         Good::new("光芒核心 <- 222KB", 222),
         Good::new("消色核心 <- 222KB", 222),
         Good::new("纷争核心 <- 222KB", 222),
+        Good::new("锄 <- 1MB", 1024),
     ];
     let mut goods_highlighted = 0; // 高亮位置
     let mut goods_next = 0; // 防溢出
@@ -31,7 +35,13 @@ pub fn main(mut a: Player) -> Player {
 
     loop {
         b.wl(format!("{} | {}{}", data::TITLE(), data::VERSION, data::S));
-        b.wl(format!("${} | {}/{}{}", a.convert(), a.hp, a.max_hp, data::S));
+        b.wl(format!(
+            "${} | {}/{}{}",
+            a.money_convert(),
+            a.hp,
+            a.max_hp,
+            data::S
+        ));
         b.wl("< 商店 >");
 
         for (index, selected) in goods.iter().enumerate() {
@@ -47,7 +57,7 @@ pub fn main(mut a: Player) -> Player {
         }
 
         b.print();
-        
+
         if let Ok(key) = read() {
             cls();
             goods_selected = -1;
@@ -61,7 +71,9 @@ pub fn main(mut a: Player) -> Player {
             }
             if 0 <= goods_next && goods_next < goods_len {
                 goods_highlighted = goods_next;
-            } else { goods_next = goods_highlighted; }
+            } else {
+                goods_next = goods_highlighted;
+            }
         }
 
         if goods_selected >= 0 && goods_selected < goods_len {
@@ -69,36 +81,42 @@ pub fn main(mut a: Player) -> Player {
                 "QUIT" => {
                     break;
                 }
-                "HP+15 <- 300KB" => {
-                    if a.money >= 300 {
-                        a.money -= 300;
+                "HP+15 <- 200KB" => {
+                    if a.money >= 200 {
+                        a.money -= 200;
                         a.hp += 15;
                     }
                 }
-                "HP+150 <- 2MB" => {
-                    if a.money >= 2 * 1024 {
-                        a.money -= 2 * 1024;
+                "HP+150 <- 1.5MB" => {
+                    if a.money >= 512 + 1024 {
+                        a.money -= 512 + 1024;
                         a.hp += 150;
-                    } 
-                },
-                "光芒核心 <- 222KB"  => {
+                    }
+                }
+                "光芒核心 <- 222KB" => {
                     if a.money >= 222 {
                         a.money -= 222;
                         *a.bag.entry(0).or_insert(0) += 1;
-                    } 
-                },
-                "消色核心 <- 222KB"  => {
+                    }
+                }
+                "消色核心 <- 222KB" => {
                     if a.money >= 222 {
                         a.money -= 222;
                         *a.bag.entry(1).or_insert(0) += 1;
-                    } 
-                },
-                "纷争核心 <- 222KB"  => {
+                    }
+                }
+                "纷争核心 <- 222KB" => {
                     if a.money >= 222 {
                         a.money -= 222;
                         *a.bag.entry(2).or_insert(0) += 1;
-                    } 
-                },
+                    }
+                }
+                "锄 <- 1MB" => {
+                    if a.money >= 1024 {
+                        a.money -= 1024;
+                        *a.bag.entry(3).or_insert(0) += 1;
+                    }
+                }
                 _ => {}
             }
         }
