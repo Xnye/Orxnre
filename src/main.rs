@@ -3,13 +3,14 @@ mod battle;
 mod data;
 mod game;
 mod shop;
+mod file;
 
 use colored::*;
 use console::{Key, Style, Term};
 use rand::{thread_rng, Rng};
-use std::net::Shutdown::Read;
-use std::{io, ops::Range, process::exit, thread, time};
+use std::{io, thread, time, ops::Range, process::exit};
 use Key::Char;
+use crate::file::load_data;
 
 // 缓冲区
 struct Buffer {
@@ -34,6 +35,11 @@ impl Buffer {
     fn wl<T: ToString>(&mut self, text: T) {
         self.modified = true;
         self.buffer = format!("{}{}\n", self.buffer, text.to_string()).white();
+    }
+    // 写入限长内容
+    fn wt<T: ToString>(&mut self, text: T) {
+        self.modified = true;
+        self.buffer = format!("{}{:<50}\n", self.buffer, text.to_string()).white();
     }
     // 清除内容
     fn cls(&mut self) {
@@ -81,11 +87,15 @@ fn main() {
 
     let mut enable_debug = false;
 
-    let menu = [
-        "开始游戏".to_string(),
+    let data_path = load_data();
+
+    let mut menu = vec![
+        " 新游戏 ".to_string(),
         "  关于  ".to_string(),
         "退出程序".to_string(),
     ];
+    
+    if data_path != "Disabled" { menu.insert(1, "继续游戏".to_string()); }
 
     let mut menu_highlighted = 0; // 高亮位置
     let mut menu_next = 0; // 防溢出
@@ -93,6 +103,7 @@ fn main() {
     let menu_len = menu.len() as i8;
 
     print!("{}", Style::new().apply_to("")); // 应用虚拟终端 (狗皮膏药: 暂时解决Win10默认终端不适配ANSI转义的问题)
+
     cls_pro();
 
     loop {
@@ -132,12 +143,17 @@ fn main() {
         // Enter 选中
         if menu_selected >= 0 && menu_selected < menu_len {
             match menu[menu_selected as usize].as_str() {
-                "开始游戏" => {
+                " 新游戏 " => {
                     println!("** 地图生成中...");
-                    game::main(enable_debug);
+                    game::main(enable_debug, "Disabled".to_string());
                     cls_pro();
                     break;
-                }
+                },
+                "继续游戏" => {
+                    game::main(enable_debug, data_path);
+                    cls_pro();
+                    break;
+                },
                 "  关于  " => {
                     cls_pro();
                     println!("{} | {}\n", data::TITLE(), data::VERSION);
@@ -147,10 +163,8 @@ fn main() {
                     println!("                                  2024/07");
                     println!("联系: bilibili@一块Yc");
                     println!("网站: orxnre.github.io");
-                    println!(
-                        "按任意键继续 (输入D{}调试)",
-                        if enable_debug { "禁用" } else { "启用" }
-                    );
+                    println!("current_dir: {}", file::path().0);
+                    println!("[ 继续 ] [ D {}调试 ]", if enable_debug { "禁用" } else { "启用" });
                     if let Ok(key) = read() {
                         match key {
                             Char('d') | Char('D') => enable_debug = !enable_debug,
@@ -158,12 +172,12 @@ fn main() {
                         }
                     }
                     cls_pro();
-                }
+                },
                 "退出程序" => {
                     cls_pro();
                     exit(0);
-                }
-                _ => {}
+                },
+                _ => {},
             }
         }
         menu_selected = -1;

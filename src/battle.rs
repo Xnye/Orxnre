@@ -1,10 +1,10 @@
 use crate::{cls, cls_pro, data, game, random, read, time_sleep, Buffer};
 use colored::{ColoredString, Colorize};
 use console::Key::*;
+use serde::{Deserialize, Serialize};
 use game::Player;
-use std::{thread, time};
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Enemy {
     pub exist: bool,
     pub max_hp: i32,
@@ -44,6 +44,10 @@ enum Action {
     Skip,
     Attack,
     End,
+}
+
+fn fill(text: &str) -> String {
+    format!("{:<50}", text)
 }
 
 pub fn main(mut a: Player, mut b: Enemy, mut priority: bool) -> (Player, Enemy) {
@@ -160,7 +164,7 @@ pub fn main(mut a: Player, mut b: Enemy, mut priority: bool) -> (Player, Enemy) 
                         next_action = Action::Attack;
                     }
                     "QUIT" => {
-                        log.push("你不能走".white());
+                        log.push(fill("你不能走").white());
                     }
                     _ => {}
                 }
@@ -177,11 +181,11 @@ pub fn main(mut a: Player, mut b: Enemy, mut priority: bool) -> (Player, Enemy) 
                 march = !march;
                 // 判断双方状态
                 let log_entry: ColoredString = format!(
-                    "{}{}",
+                    "{}",
                     if a.hp <= 0 {
                         "你寄了".red()
                     } else if b.hp <= 0 {
-                        format!("你征服了敌人 +{}KB", b.reward).green()
+                        fill(&format!("你征服了敌人 +{}KB", b.reward)).green()
                     } else {
                         // 如果对战未结束则为 true, 反之亦然
                         march = !march;
@@ -190,14 +194,13 @@ pub fn main(mut a: Player, mut b: Enemy, mut priority: bool) -> (Player, Enemy) 
                         let noise = random(-1..2);
                         if !priority {
                             b.hp -= a.atk - noise;
-                            format!("你造成了 {} 伤害", a.atk + noise).white()
+                            fill(&format!("你造成了 {} 伤害", a.atk + noise)).white()
                         } else {
                             time_sleep(60);
                             a.hp -= b.atk - noise;
-                            format!("敌方造成了 {} 伤害", b.atk + noise).yellow()
+                            fill(&format!("敌方造成了 {} 伤害", b.atk + noise)).yellow()
                         }
-                    },
-                    data::S
+                    }
                 )
                 .white();
 

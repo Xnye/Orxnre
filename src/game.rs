@@ -1,18 +1,20 @@
 use colored::*;
 use console::Key;
 use noise::{NoiseFn, Perlin};
-use rand::{thread_rng, Rng};
 use std::collections::BTreeMap;
 use std::process::exit;
 use Key::Char;
+use serde::{Serialize, Deserialize};
 
 use crate::data::{self, ItemAttr, S, SS};
-use crate::{bag, battle, cls, cls_pro, random, read, shop, time_sleep, Buffer};
+use crate::{bag, battle, shop, file, cls, cls_pro, random, read, time_sleep, Buffer};
 
 use battle::{Enemy, EnemyType};
 use data::block_name;
+use crate::file::create_save_wizard;
 
 // 玩家数据
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Player {
     pub position: (u8, u8),
     pub money: i32,
@@ -47,7 +49,7 @@ impl Player {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
 enum Act {
     None,
     Tp(i8),
@@ -55,7 +57,7 @@ enum Act {
 }
 
 // 地图数据
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 struct Map {
     id: Vec<Vec<i8>>,
     act: Vec<Vec<Act>>,
@@ -197,77 +199,135 @@ impl Map {
         gift
     }
 }
+
+#[derive(Clone, Serialize, Deserialize)]
+struct Saving {
+    new: bool,
+    player: Player,
+    seed: u32,
+    local: i8,
+    goto: i8,
+    map: Map,
+    map_list: Vec<Map>,
+}
+
+impl Saving {
+    fn empty() -> Self {
+        Saving {
+            new: true,
+            player: Player::new(),
+            seed: 0,
+            local: 0,
+            goto: 0,
+            map: Map::new(64, 64),
+            map_list: vec![Map::new(64, 64); 2],
+        }
+    }
+
+    fn new(mut self) -> Self {
+        self.player = Player::new(); // 初始化玩家信息
+        self.seed = rand::random(); // 种子
+        self.local = 0; // 当前地图编号
+        self.goto = 0; // 跳转地图编号
+
+        let seed = self.seed;
+
+        // 初始化地图
+        let map;
+        let mut map_list: Vec<Map> = vec![Map::new(64, 64); 2];
+
+        let (x_len, y_len) = (
+            map_list[0].measure().0 as i32,
+            map_list[0].measure().0 as i32,
+        );
+        for _ in 0..3 {
+            map_list[0].map_terrain(2, seed + 2, 190.0, 1);
+            map_list[0].map_terrain(1, seed + 1, 190.0, 1);
+            map_list[0].map_terrain(3, seed, 170.0, 0);
+        }
+        for _ in 0..48 {
+            map_list[0].spawn(
+                random(0..y_len) as u8,
+                random(0..x_len) as u8,
+                EnemyType::Normal(1),
+            );
+        }
+        for l in 0..5 {
+            map_list[1].spawn(
+                random(0..y_len) as u8,
+                random(0..x_len) as u8,
+                EnemyType::Normal((l + 2) * 3),
+            );
+        }
+        map_list[0].set_random(-1, Act::None); // 商店
+        map_list[0].set_random(-2, Act::Tp(1)); // 传送门 to 1
+        map_list[0].gift_random(300, 200, 400);
+
+        map_list[1].map_terrain(4, seed + 4, 190.0, 1);
+        map_list[1].set_random(-2, Act::Tp(0)); // 传送门 to 0
+        map_list[1].gift_random(6000, 200, 40);
+
+        map = map_list[0].clone();
+
+        self.map_list = map_list;
+        self.map = map;
+
+        self
+    }
+}
+
 #[warn(unused_assignments)]
-pub fn main(enable_debug: bool) {
+pub fn main(enable_debug: bool, mut data_path: String) {
     let mut b = Buffer::new(); // 主要缓冲区 打印所有内容 (buffer)
     let mut h = Buffer::new(); // 打印提示信息用 (hint)
+    let mut saving = Saving::empty();
 
-    let mut player = Player::new(); // 初始化玩家信息
-    let seed: u32 = thread_rng().gen(); // 种子
-    let mut local: i8 = 0; // 当前地图编号
-    let mut goto: i8 = 0; // 跳转地图编号
-
-    // 初始化地图
-    let mut map;
-    let mut map_list: Vec<Map> = vec![Map::new(64, 64); 2];
-
-    let (x_len, y_len) = (
-        map_list[0].measure().0 as i32,
-        map_list[0].measure().0 as i32,
-    );
-    for _ in 0..3 {
-        map_list[0].map_terrain(2, seed + 2, 190.0, 1);
-        map_list[0].map_terrain(1, seed + 1, 190.0, 1);
-        map_list[0].map_terrain(3, seed, 170.0, 0);
+    if data_path != "Disabled" {
+        match file::l::<Saving>(data_path.clone()) {
+            Ok(s) => {
+                saving = s;
+            }
+            Err(e) => {
+                println!("ERROR ({})", e);
+            }
+        }
     }
-    for _ in 0..48 {
-        map_list[0].spawn(
-            random(0..y_len) as u8,
-            random(0..x_len) as u8,
-            EnemyType::Normal(1),
-        );
+
+    if saving.new { saving = saving.clone().new(); }
+
+    let mut player = saving.player;
+    let seed = saving.seed;
+    let mut local = saving.local;
+    let mut goto = saving.goto;
+
+    let mut map_list = saving.map_list;
+    let mut map = saving.map;
+
+    if enable_debug {
+        player.money = 9999999;
     }
-    for l in 0..5 {
-        map_list[1].spawn(
-            random(0..y_len) as u8,
-            random(0..x_len) as u8,
-            EnemyType::Normal((l + 2) * 3),
-        );
-    }
-    map_list[0].set_random(-1, Act::None); // 商店
-    map_list[0].set_random(-2, Act::Tp(1)); // 传送门 to 1
-    map_list[0].gift_random(300, 200, 400);
-
-    map_list[1].map_terrain(4, seed + 4, 190.0, 1);
-    map_list[1].set_random(-2, Act::Tp(0)); // 传送门 to 0
-    map_list[1].gift_random(6000, 200, 40);
-
-    map = map_list[0].clone();
-
-    cls_pro();
 
     let basic_info = || -> String {
         format!(
             "{} | {}{}{}",
             data::TITLE(),
             data::VERSION,
-            if enable_debug { " | DEBUG" } else { "" },
+            if enable_debug { format!(" | DEBUG | SEED {}", seed ) } else { "".to_string() },
             S
         )
     };
 
-    if enable_debug {
-        player.money = 9999999;
-    }
+    cls_pro();
 
     // 主循环
     'main: loop {
         // 切换地图
         if goto != local {
+            map_list[local as usize] = map.clone();
             map = map_list[goto as usize].clone();
             local = goto;
         }
-        let (x_len, y_len) = (map.measure().0 as i32, map.measure().0 as i32);
+        let (x_len, y_len) = (map.measure().0 as i32, map.measure().1 as i32);
 
         'minor: loop {
             cls();
@@ -303,7 +363,7 @@ pub fn main(enable_debug: bool) {
 
                     // H 帮助
                     Char('h') | Char('H') | Key::Enter => {
-                        h.w("H > WASD 移动 E 探索 Q 背包 H 提示 P 耕地 Esc 退出游戏")
+                        h.wl("H > WASD 移动 H 提示 P 耕地 L 保存进度 E 探索 Q 背包");
                     }
 
                     // E 探索
@@ -315,9 +375,9 @@ pub fn main(enable_debug: bool) {
                             map.act[player.position.0 as usize][player.position.1 as usize] =
                                 Act::Gift(0);
                             player.money += gift;
-                            h.w(format!("E > 找到了宝藏 +{}KB{}", gift, S));
+                            h.wt(format!("E > 找到了宝藏 +{}KB{}", gift, S));
                         } else {
-                            h.w(format!("E > 空空如也{}", S));
+                            h.wt(format!("E > 空空如也{}", S));
                         }
                     }
 
@@ -334,13 +394,37 @@ pub fn main(enable_debug: bool) {
                         if player.bag.contains_key(&3) {
                             if map.id[y][x] == 0 || map.id[y][x] == 1 {
                                 map.id[y][x] = 5;
-                                h.w(format!("P > 耕地成功{}", S));
+                                h.wt("P > 耕地成功");
                             } else {
-                                h.w(format!("P > 此处无法耕地{}", S));
+                                h.wt("P > 此处无法耕地");
                             }
                         } else {
-                            h.w(format!("P > 没有锄{}", S));
+                            h.wt("P > 没有锄");
                         }
+                    }
+
+                    // L 保存进度
+                    Char('l') | Char('L') => {
+                        if data_path == "Disabled" { data_path = create_save_wizard(); }
+                        if data_path != "Disabled" {
+                            saving = Saving {
+                                new: false,
+                                player: player.clone(),
+                                seed,
+                                local,
+                                goto,
+                                map: map.clone(),
+                                map_list: map_list.clone(),
+                            };
+                            match file::s(data_path.clone(), &saving) {
+                                Ok(_) => {
+                                    h.wt("L > 已保存进度");
+                                }
+                                Err(e) => {
+                                    h.wt(format!("L > ERROR ({})", e));
+                                }
+                            };
+                        } else { h.wt( "L > 取消" ); }
                     }
 
                     // Others 处理默认情况

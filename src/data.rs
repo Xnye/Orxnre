@@ -5,8 +5,8 @@ use colored::{ColoredString, Colorize};
 use lazy_static::lazy_static;
 use std::ops::Range;
 
-pub const VERSION: &str = "v1.0-beta.25";
-pub const S: &str = "                                          ";
+pub const VERSION: &str = "v1.0-beta.26";
+pub const S: &str = "                                            ";
 pub const SS: &str = "                                                       ";
 fn c(text: &str, rgb: (u8, u8, u8)) -> ColoredString {
     let (r, g, b) = rgb;
